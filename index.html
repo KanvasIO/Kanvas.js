@@ -1,58 +1,24 @@
- <html>
-	<head>
-		<title>{{title}}</title>
-		
-		<script type="application/javascript", src="lib/jquery.js"></script>
-		
-		
-		
-	</head>  
-	<body style="overflow: hidden">  
-		
-		<!--script type="application/javascript", src="js/K_Array.js"></script>-->
-		<!--script type="application/javascript", src="js/K_Event.js"></script>-->
-		<!--script type="application/javascript", src="js/K_Logger.js"></script>-->
-		<!--script type="application/javascript", src="js/K_ImageLoader.js"></script>-->
-		<!--script type="application/javascript", src="js/K_KeyTrack.js"></script>-->
-		<script type="application/javascript", src="js/KContext.js"></script>
-		
-		<script>
-			var canvas = document.createElement('canvas');
-			canvas.width = $(window).width();
-			canvas.height = $(window).height();
-			$('body').append(canvas);
-			var ctx = canvas.getContext('2d');
-			var context = new KContext();
-			
-			__defineSetter__('helpMe', function(ss){
-				asdasd = s;
-				asdasd123123;
-				return array.pop();
-			}
-			
-			helpMe
-			
-			something.helpMe = 5;
-			
-			
-			var Car = newClass({
-				init: function(){
-				
-				},
-				draw: function(){
+<!doctype html>
+<html>
+<head>
+	<title>Kanvas</title>
+	<style>
+	@import url(http://fonts.googleapis.com/css?family=Pathway+Gothic+One);
+	* {margin:0; padding:0; font-family:'pathway gothic one';}
+	html {width:100%; height:100%; display:table; text-align:center}
+	body {display:table-cell; vertical-align:middle; background:steelblue; color:cadetblue; text-transform:uppercase}
+	section {width:60%; margin:0 auto; letter-spacing:3px}
+	</style>
+</head>
+<body>
+	<section>
+		<h2>Kanvas is an object oriented drawing library which simplifies drawing, animation, and events for HTML5 Canvas!</h2>
+	</section>
+	<script src="http://code.jquery.com/jquery-latest.js"></script>
+	<script>
+		(function( $ ){ $.fn.fitText = function( kompressor, options ) { var settings = { 'minFontSize' : Number.NEGATIVE_INFINITY, 'maxFontSize' : Number.POSITIVE_INFINITY }; return this.each(function(){ var $this = $(this); var compressor = kompressor || 1; if ( options ) { $.extend( settings, options ); } var resizer = function () { $this.css('font-size', Math.max(Math.min($this.width() / (compressor*10), parseFloat(settings.maxFontSize)), parseFloat(settings.minFontSize))); }; resizer(); $(window).resize(resizer); }); }; })( jQuery ); 
 
-				}
-				
-			});
-			
-			
-			setInterval(function(){
-			
-				
-			},2);
-			
-			
-		</script>
-		
-	</body>  
-</html>  
+		$("section").fitText(2.5);
+	</script>
+</body>
+</html>
