@@ -1,0 +1,92 @@
+ <html>
+	<head>
+		<title>{{title}}</title>
+		
+		<script type="application/javascript", src="lib/jquery.js"></script>
+		
+		
+		
+	</head>  
+	<body style="overflow: hidden">  
+		
+		<!--script type="application/javascript", src="js/K_Array.js"></script>-->
+		<!--script type="application/javascript", src="js/K_Event.js"></script>-->
+		<!--script type="application/javascript", src="js/K_Logger.js"></script>-->
+		<!--script type="application/javascript", src="js/K_ImageLoader.js"></script>-->
+		<!--script type="application/javascript", src="js/K_KeyTrack.js"></script>-->
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			var canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 1000;
+			$('body').append(canvas);
+			var ctx = canvas.getContext('2d');
+			var context = new KContext();
+		
+			
+			
+			
+			var howmany = 10;
+			
+			var Chain = newClass({
+				name: 'Chain Object',
+				init: function(ii){
+					this.speed = (howmany-ii)*0.001+0.001;
+					this.color = "rgba("+(howmany-ii)*(150/howmany)+","
+										+(howmany-ii)*(150/howmany)+","
+										+(howmany-ii)*(150/howmany)+",1)";
+					this.length = 20 + Math.random()*60;
+					this.showBox = true;
+				},
+				draw: function(){
+					context.fillStyle = this.color;
+					context.beginPath();
+					context.arc(0,0,10, 0, Math.PI*2, true); 
+					context.closePath();
+					context.fill();
+					
+					context.beginPath();
+					context.arc(this.length,0,10, 0, Math.PI*2, true);
+					context.closePath();
+					context.fill();
+					
+					context.fillRect(0,-5,this.length,10);
+				}
+				
+			});
+			
+			var chains = [];
+			for(var ii = 0; ii < howmany; ii += 1){
+				var ccc = new Chain(ii);
+				chains.push(ccc);
+			}
+			chains.reverse();
+			var totalSpeed = 0;
+			var speedFactor = 1;
+			setInterval(function(){
+				ctx.fillStyle = "#CCCCCC";
+				ctx.fillRect(0,0,canvas.width,canvas.height);
+				
+				chains[0].x = canvas.width/2;
+				chains[0].y = canvas.height/2;
+				
+				totalSpeed = chains[0].speed;
+				chains[0].rotation += totalSpeed;
+				chains[0].render();
+				for(var ii = 0; ii < chains.length-1; ii+=1){
+					chains[ii+1].x = chains[ii].x + Math.cos(chains[ii].rotation)*chains[ii].length;
+					chains[ii+1].y = chains[ii].y + Math.sin(chains[ii].rotation)*chains[ii].length;
+					chains[ii+1].rotation += (chains[ii+1].speed + totalSpeed) * (1 + Math.sin(speedFactor))
+					totalSpeed += chains[ii+1].speed;
+					totalSpeed *= 0.7;
+					chains[ii+1].render();
+				}
+				speedFactor+=0.004
+
+			},2);
+			
+			
+		</script>
+		
+	</body>  
+</html>  
