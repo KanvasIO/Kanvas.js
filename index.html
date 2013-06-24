@@ -35,13 +35,15 @@
 					this.x = 100+ Math.random()* (canvas.width-200);
 					this.y = 100+ Math.random()* (canvas.height-200);
 					this.dir = Math.random()*Math.PI*2,
-					this.baseSpeed =  Math.random()*14;
-					this.scaleX = this.scaleY = 1//0.4 + 0.5 * this.baseSpeed/14
+					this.baseSpeed =  2 + Math.random()*4;
+					this.scaleX = this.scaleY = 0.3 + 1 * this.baseSpeed/6
 					this.speed = this.baseSpeed;
 					this.changed = false;
 					this.g = 0;
 					this.b = 0;
 					this.paused = false;
+					this.justRolled = 5;
+					this.wave = 0;
 					//this.showBox = true;
 				},
 				every: function(){
@@ -51,25 +53,31 @@
 						this.b -= 1;
 						if(this.b<0)this.b = 0;
 						
-						this.x += Math.cos(this.dir)*this.speed;
-						this.y += Math.sin(this.dir)*this.speed;
+						this.wave += 0.01
+						
+						this.x += Math.cos(this.dir + Math.sin(this.wave)/4)*this.speed;
+						this.y += Math.sin(this.dir+ Math.sin(this.wave)/4)*this.speed;
 						
 						if(this.x < -15)this.x = canvas.width+5;
 						if(this.y < -15)this.y = canvas.height+5;
 						if(this.x > canvas.width+15)this.x = -15;
 						if(this.y > canvas.height+15)this.y = -15;
 						
-						this.rotation = this.dir;
+						this.rotation = this.dir+ Math.sin(this.wave)/4;
 						
-						if(this.rolled)this.paused = true;
+						if(this.rolled){
+							this.justRolled = 4;
+							this.paused = true;
+						}else this.justRolled -= 1;
 						this.g = Math.round(Math.min((this.speed/this.baseSpeed)/5, 1)*255)
 					}
 					
 				},
 				draw: function(){
-						
-					if(!this.paused)context.fillStyle = "rgba("+(255-this.g)+","+this.g+","+this.b+",1)";
-					else context.fillStyle = "#fff";
+					if(!this.paused)context.fillStyle = "rgba("+(255-this.g)+","+this.g+","+this.b+", "+((this.baseSpeed)/6)+")"
+					else {
+						context.fillStyle = "rgba(255,255,255,"+((this.baseSpeed)/60)+")";
+					}
 					context.beginPath()
 					context.moveTo(-10,-10);
 					context.lineTo(20,-10)
@@ -90,15 +98,15 @@
 					var b = cars[ii].y - mouseY;
 					var distance = Math.sqrt((a*a) + (b*b));
 					if(distance < 300){
-						distance = Math.pow(((300-distance)/300),8)*0.8 + 0.2;
+						distance = Math.pow(((300-distance)/300),8)*0.2 + 0.1;
 						cars[ii].paused = false;
 						cars[ii].rolled = false;
 						var power = distance*120;
-						var newDirection = Math.atan2(a,b);
+						var newDirection = Math.atan2(b,a);
 						var newX = Math.cos(cars[ii].dir)*cars[ii].speed + Math.cos(newDirection)*power;
 						var newY = Math.sin(cars[ii].dir)*cars[ii].speed + Math.sin(newDirection)*power;
 						cars[ii].speed = Math.sqrt((newX * newX) + (newY * newY));
-						cars[ii].dir = Math.atan2(newX,newY);
+						cars[ii].dir = Math.atan2(newY,newX);
 						
 					}
 				}
@@ -119,7 +127,7 @@
 					cars[i].every();
 					cars[i].render(ctx);
 				}
-			},10);
+			},1);
 			
 			
 		</script>

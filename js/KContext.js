@@ -209,14 +209,14 @@ function mouseMoveHandler(e){
 
 function mouseMove(){
 	for(var object in mouseMoveObjects){
-		var temp = rotateCoords(mouseX - mouseMoveObjects[object].x , 
-								mouseY - mouseMoveObjects[object].y,
+		var temp = rotateCoords((mouseX - mouseMoveObjects[object].x)/mouseMoveObjects[object].scaleX, 
+								(mouseY - mouseMoveObjects[object].y)/mouseMoveObjects[object].scaleY,
 								-mouseMoveObjects[object].rotation);
 	
-		mouseMoveObjects[object].mouseX = (temp[0])/mouseMoveObjects[object].scaleX;
-		mouseMoveObjects[object].mouseY = (temp[1])/mouseMoveObjects[object].scaleY;
+		mouseMoveObjects[object].mouseX = (temp[0])*mouseMoveObjects[object].scaleX;
+		mouseMoveObjects[object].mouseY = (temp[1])*mouseMoveObjects[object].scaleY;
 		
-		if(mouseMoveObjects[object].__hitBox){
+		if(mouseMoveObjects[object].__hitBox && mouseMoveObjects[object].justRolled<0){
 			mouseMoveObjects[object].rolled = pointInRect(	temp[0],temp[1],
 															mouseMoveObjects[object].__hitBox[0],
 															mouseMoveObjects[object].__hitBox[1],
@@ -326,8 +326,6 @@ function newClass(bluePrint){
 				cc.setLineDash([3,3])
 				cc.stroke();
 				cc.restore();
-				
-				
 			}
 			cc.restore();
 		},
