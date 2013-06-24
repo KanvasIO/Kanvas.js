@@ -1,6 +1,6 @@
  <html>
 	<head>
-		<title>{{title}}</title>
+		<title>Kanvas</title>
 		
 		<script type="application/javascript", src="lib/jquery.js"></script>
 		
@@ -18,7 +18,8 @@
 		
 		<script>
 			var canvas = document.createElement('canvas');
-			canvas.width = canvas.height = 1000;
+			canvas.width = $(window).width();
+			canvas.height = $(window).height();
 			$('body').append(canvas);
 			var ctx = canvas.getContext('2d');
 			var context = new KContext();
