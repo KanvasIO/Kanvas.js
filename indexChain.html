@@ -39,9 +39,12 @@
 					this.brother = null;
 					this.system = sys;
 					//this.showBox = true;
-					//this.rotation = Math.random()*Math.PI*2;
+					this.rotation = 0//Math.random()*Math.PI*2;
 				},
 				every: function(){
+					this.x = this.x || 0;
+					this.y = this.y || 0;
+					this.rotation = this.rotation || 0;
 					//this.length = this.baselength * ((this.speed + this.system.totalSpeed) * this.system.totalVar)/0.1
 					if(this.brother){
 						this.x = this.brother.x + Math.cos(this.brother.rotation)*this.brother.length;
@@ -141,7 +144,7 @@
 					}
 					this.chains.reverse();
 					this.chains.push(this.claw);
-					for(var ii = 1; ii < this.chains.length; ii += 1){
+					for(var ii = 0; ii < this.chains.length; ii += 1){
 						this.chains[ii].brother = this.chains[ii-1]
 					}
 					
@@ -150,7 +153,8 @@
 					this.totalVar = (this.totalBase + this.speedFactor2*Math.sin(this.speedFactor));
 					totalSpeed = this.chains[0].speed;
 					for(var ii = 0; ii < this.chains.length; ii+=1){
-						if(this.chains[ii].every)this.chains[ii].every();
+						this.chains[ii].every();
+						this.chains[ii].render(ctx);
 					}
 					//this.chains[0].rotation += totalSpeed * this.totalVar;
 					
@@ -158,45 +162,12 @@
 				},
 				draw: function(){
 					
-					
 				}
 				
 			});
-			
-			var mouseX = 0;
-			var mouseY = 0;
-			canvas.addEventListener('mousemove', mouseMoveHandler, false)
-			function mouseMoveHandler(e){
-				//
-				if(e.clientX){
-					var rect = this.getBoundingClientRect();
-					if(rect){
-						mouseX = e.clientX - rect.left,
-						mouseY = e.clientY - rect.top
-					}else{
-						mouseX = e.clientX - this.offsetLeft;
-						mouseY = e.clientY - this.offsetLeft;
-					}
-				}else if(e.offsetX) {
-					mouseX = e.offsetX;
-					mouseY = e.offsetY;
-				}else if(e.layerX) {
-					mouseX = e.layerX;
-					mouseY = e.layerY;
-				}else console.log("Couldn't Determine Mouse Coordinates", e.offsetX, e.layerX, e.pageX, e.clientX);
-				
-			}
 			var claw;
-			function mouseMove(){
-				claw = allSys[0].chains[allSys[0].numChains + 1];
-				
-				var temp = rotateCoords(mouseX - claw.x,  mouseY - claw.y, -claw.rotation);
 			
-				claw.mouseX = temp[0];
-				claw.mouseY = temp[1];
-			}
-			
-			var numSys= 1;
+			var numSys= 20;
 			var allSys = [];
 			for(var nn = 0; nn < numSys; nn+=1){
 				var sys1 = new System(100 + Math.random()*(-200+canvas.height), 100 + Math.random()*(-200+canvas.height));
@@ -204,18 +175,14 @@
 			}
 			
 			setInterval(function(){
-				ctx.fillStyle = "#000000";
+				ctx.fillStyle = "#000";
 				ctx.fillRect(0,0,canvas.width,canvas.height);
 					
 				
-				//context.clearTrack();
-				mouseMove()
+				
 				for(var nn = 0; nn < numSys; nn+=1){
 					allSys[nn].every();
 					allSys[nn].render(ctx);
-					for(var ii = 0; ii < allSys[nn].chains.length; ii+=1){
-						allSys[nn].chains[ii].render(ctx);
-					}
 				}
 
 			},1000/60);
