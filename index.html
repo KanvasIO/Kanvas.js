@@ -23,6 +23,8 @@
 
 			$("section").fitText(2.5);
 		</script>
+		<label for = "show-boxes">Show Hit Boxes</label>
+		<input id = "fuck derek" type = "checkbox"/>
 		<!--script type="application/javascript", src="js/K_Array.js"></script>-->
 		<!--script type="application/javascript", src="js/K_Event.js"></script>-->
 		<!--script type="application/javascript", src="js/K_Logger.js"></script>-->
@@ -40,6 +42,8 @@
 			var mouseMoveObjects = [];
 			canvas.addEventListener('mousemove', mouseMoveHandler, false)
 			canvas.addEventListener('mousedown', click, false)
+			
+			var crappyShit = document.getElementById('fuck derek');
 			
 			
 			
@@ -61,6 +65,7 @@
 					//this.showBox = true;
 				},
 				every: function(){
+					this.showBox = crappyShit.checked;
 					if(!this.paused){
 						if(this.speed > this.baseSpeed)this.speed *= 0.99
 						else this.speed = this.baseSpeed
@@ -127,7 +132,7 @@
 			}
 			
 			var cars = [];
-			for(var i = 0; i < 1000; i+=1){
+			for(var i = 0; i < 300; i+=1){
 				var car = new Car();
 				cars.push(car);
 				mouseMoveObjects.push(car);
@@ -137,7 +142,7 @@
 				ctx.fillStyle = "#000";
 				ctx.fillRect(0,0,canvas.width,canvas.height);
 				mouseMove()
-				for(var i = 0; i < 1000; i+=1){
+				for(var i = 0; i < 300; i+=1){
 					cars[i].every();
 					cars[i].render(ctx);
 				}

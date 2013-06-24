@@ -307,24 +307,17 @@ function newClass(bluePrint){
 			cc.fillStyle = "#fff";
 			cc.fillRect(-0.5,-3,1,6);
 			cc.fillRect(-3,-0.5,6,1);
-			if(this.mouseX){
-				cc.save();
-				cc.translate(this.mouseX, this.mouseY);
-				cc.fillStyle = "#F00";
-				cc.fillRect(-5,-5,10,10);
-				cc.restore();
-			}
+			
 			if(this.__width){
 				cc.beginPath();
 				cc.rect(this.__hitBox[0],this.__hitBox[1],this.__hitBox[2]-this.__hitBox[0],this.__hitBox[3]-this.__hitBox[1]);
 				cc.closePath();
-				cc.strokeStyle = "#211";
-				cc.setLineDash(0)
+				cc.strokeStyle = "#fff";
 				cc.stroke();
-				cc.lineWidth = 1.5;
-				cc.strokeStyle = "#edd";
-				cc.setLineDash([3,3])
-				cc.stroke();
+				//cc.lineWidth = 1.5;
+				//cc.strokeStyle = "#edd";
+				//cc.setLineDash([3,3])
+				//cc.stroke();
 				cc.restore();
 			}
 			cc.restore();
