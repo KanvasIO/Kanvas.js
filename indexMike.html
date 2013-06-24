@@ -31,6 +31,7 @@
 				init: function(ss){
 					console.log(ss)
 					this.speed = ss
+					this.showBox = true;
 					this.rotation = Math.random() * Math.PI * 2;
 					this.rspeed = (Math.random() * 0.04) - 0.02;
 					this.x = Math.random()*canvas.width;
@@ -76,7 +77,7 @@
 			
 			
 			setInterval(function(){
-				//ctx.fillRect(0,0,canvas.width,canvas.height);
+				ctx.fillRect(0,0,canvas.width,canvas.height);
 			
 				
 				for(var i =0; i < 1000; i += 1){

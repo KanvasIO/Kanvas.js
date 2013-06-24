@@ -23,33 +23,103 @@
 			$('body').append(canvas);
 			var ctx = canvas.getContext('2d');
 			var context = new KContext();
+			var mouseMoveObjects = [];
+			canvas.addEventListener('mousemove', mouseMoveHandler, false)
+			canvas.addEventListener('mousedown', click, false)
 			
-			__defineSetter__('helpMe', function(ss){
-				asdasd = s;
-				asdasd123123;
-				return array.pop();
-			}
-			
-			helpMe
-			
-			something.helpMe = 5;
 			
 			
 			var Car = newClass({
 				init: function(){
-				
+					this.dynamic = true;
+					this.x = 100+ Math.random()* (canvas.width-200);
+					this.y = 100+ Math.random()* (canvas.height-200);
+					this.dir = Math.random()*Math.PI*2,
+					this.baseSpeed =  Math.random()*14;
+					this.scaleX = this.scaleY = 1//0.4 + 0.5 * this.baseSpeed/14
+					this.speed = this.baseSpeed;
+					this.changed = false;
+					this.g = 0;
+					this.b = 0;
+					this.paused = false;
+					//this.showBox = true;
+				},
+				every: function(){
+					if(!this.paused){
+						if(this.speed > this.baseSpeed)this.speed *= 0.99
+						else this.speed = this.baseSpeed
+						this.b -= 1;
+						if(this.b<0)this.b = 0;
+						
+						this.x += Math.cos(this.dir)*this.speed;
+						this.y += Math.sin(this.dir)*this.speed;
+						
+						if(this.x < -15)this.x = canvas.width+5;
+						if(this.y < -15)this.y = canvas.height+5;
+						if(this.x > canvas.width+15)this.x = -15;
+						if(this.y > canvas.height+15)this.y = -15;
+						
+						this.rotation = this.dir;
+						
+						if(this.rolled)this.paused = true;
+						this.g = Math.round(Math.min((this.speed/this.baseSpeed)/5, 1)*255)
+					}
+					
 				},
 				draw: function(){
-
+						
+					if(!this.paused)context.fillStyle = "rgba("+(255-this.g)+","+this.g+","+this.b+",1)";
+					else context.fillStyle = "#fff";
+					context.beginPath()
+					context.moveTo(-10,-10);
+					context.lineTo(20,-10)
+					context.lineTo(30,0);
+					context.lineTo(20,10)
+					context.lineTo(-10,10)
+					context.lineTo(0,0)
+					context.lineTo(-10,-10)
+					context.closePath()
+					context.fill();
 				}
 				
 			});
 			
+			function click(){
+				for(var ii in cars){
+					var a = cars[ii].x - mouseX;
+					var b = cars[ii].y - mouseY;
+					var distance = Math.sqrt((a*a) + (b*b));
+					if(distance < 300){
+						distance = Math.pow(((300-distance)/300),8)*0.8 + 0.2;
+						cars[ii].paused = false;
+						cars[ii].rolled = false;
+						var power = distance*120;
+						var newDirection = Math.atan2(a,b);
+						var newX = Math.cos(cars[ii].dir)*cars[ii].speed + Math.cos(newDirection)*power;
+						var newY = Math.sin(cars[ii].dir)*cars[ii].speed + Math.sin(newDirection)*power;
+						cars[ii].speed = Math.sqrt((newX * newX) + (newY * newY));
+						cars[ii].dir = Math.atan2(newX,newY);
+						
+					}
+				}
+			}
+			
+			var cars = [];
+			for(var i = 0; i < 300; i+=1){
+				var car = new Car();
+				cars.push(car);
+				mouseMoveObjects.push(car);
+			}
 			
 			setInterval(function(){
-			
-				
-			},2);
+				ctx.fillStyle = "#000";
+				ctx.fillRect(0,0,canvas.width,canvas.height);
+				mouseMove()
+				for(var i = 0; i < 300; i+=1){
+					cars[i].every();
+					cars[i].render(ctx);
+				}
+			},10);
 			
 			
 		</script>
