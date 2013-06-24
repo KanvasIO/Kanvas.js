@@ -1,14 +1,28 @@
+
  <html>
 	<head>
-		<title>{{title}}</title>
+	<title>Kanvas</title>
+	<style>
+	@import url(http://fonts.googleapis.com/css?family=Pathway+Gothic+One);
+	* {margin:0; padding:0; font-family:'pathway gothic one';}
+	html {width:100%; height:100%; display:table; text-align:center}
+	body {display:table-cell; vertical-align:middle; background:#a22; color:black; text-transform:uppercase}
+	section {width:60%; margin:0 auto; letter-spacing:2px}
+	</style>
 		
-		<script type="application/javascript", src="lib/jquery.js"></script>
-		
-		
+	<script type="application/javascript", src="lib/jquery.js"></script>
 		
 	</head>  
 	<body style="overflow: hidden">  
-		
+		<section>
+			<h2>Kanvas is an object oriented drawing library which simplifies drawing, animation, and events for HTML5 Canvas!</h2>
+		</section>
+		<script src="http://code.jquery.com/jquery-latest.js"></script>
+		<script>
+			(function( $ ){ $.fn.fitText = function( kompressor, options ) { var settings = { 'minFontSize' : Number.NEGATIVE_INFINITY, 'maxFontSize' : Number.POSITIVE_INFINITY }; return this.each(function(){ var $this = $(this); var compressor = kompressor || 1; if ( options ) { $.extend( settings, options ); } var resizer = function () { $this.css('font-size', Math.max(Math.min($this.width() / (compressor*10), parseFloat(settings.maxFontSize)), parseFloat(settings.minFontSize))); }; resizer(); $(window).resize(resizer); }); }; })( jQuery ); 
+
+			$("section").fitText(2.5);
+		</script>
 		<!--script type="application/javascript", src="js/K_Array.js"></script>-->
 		<!--script type="application/javascript", src="js/K_Event.js"></script>-->
 		<!--script type="application/javascript", src="js/K_Logger.js"></script>-->
@@ -113,7 +127,7 @@
 			}
 			
 			var cars = [];
-			for(var i = 0; i < 300; i+=1){
+			for(var i = 0; i < 1000; i+=1){
 				var car = new Car();
 				cars.push(car);
 				mouseMoveObjects.push(car);
@@ -123,7 +137,7 @@
 				ctx.fillStyle = "#000";
 				ctx.fillRect(0,0,canvas.width,canvas.height);
 				mouseMove()
-				for(var i = 0; i < 300; i+=1){
+				for(var i = 0; i < 1000; i+=1){
 					cars[i].every();
 					cars[i].render(ctx);
 				}
