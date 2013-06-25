@@ -15,7 +15,7 @@
 	</head>  
 	<body style="overflow: hidden">  
 		<section>
-			<h2>Kanvas is an object oriented drawing library which simplifies drawing, animation, and events for HTML5 Canvas!</h2>
+			<h2>Kanvas is an object oriented library which simplifies drawing, animation, and events for HTML5 Canvas!</h2>
 		</section>
 		<script src="http://code.jquery.com/jquery-latest.js"></script>
 		<script>
@@ -58,45 +58,50 @@
 					this.speed = this.baseSpeed;
 					this.changed = false;
 					this.g = 0;
-					this.b = 0;
-					this.paused = false;
 					this.justRolled = 5;
 					this.wave = 0;
 					//this.showBox = true;
 				},
 				every: function(){
 					this.showBox = crappyShit.checked;
-					if(!this.paused){
-						if(this.speed > this.baseSpeed)this.speed *= 0.99
-						else this.speed = this.baseSpeed
-						this.b -= 1;
-						if(this.b<0)this.b = 0;
+					if(this.speed > this.baseSpeed)this.speed *= 0.99
+					else this.speed = this.baseSpeed
+					
+					this.wave += 0.01
+					
+					this.x += Math.cos(this.dir + Math.sin(this.wave)/4)*this.speed;
+					this.y += Math.sin(this.dir+ Math.sin(this.wave)/4)*this.speed;
+					
+					if(this.x < -15)this.x = canvas.width+5;
+					if(this.y < -15)this.y = canvas.height+5;
+					if(this.x > canvas.width+15)this.x = -15;
+					if(this.y > canvas.height+15)this.y = -15;
+					
+					this.rotation = this.dir+ Math.sin(this.wave)/4;
+					
+					
+					var a = this.x - mouseX;
+					var b = this.y - mouseY;
+					var distance = Math.sqrt((a*a) + (b*b));
+					if(distance < 500){
+						distance = Math.pow(((500-distance)/500),5)*0.2 + 0.1;
+						this.rolled = false;
+						var power = distance;
+						var newDirection = Math.atan2(b,a);
+						var newX = Math.cos(this.dir)*this.speed + Math.cos(newDirection)*power;
+						var newY = Math.sin(this.dir)*this.speed + Math.sin(newDirection)*power;
+						this.speed = Math.sqrt((newX * newX) + (newY * newY));
+						this.dir = Math.atan2(newY,newX);
 						
-						this.wave += 0.01
-						
-						this.x += Math.cos(this.dir + Math.sin(this.wave)/4)*this.speed;
-						this.y += Math.sin(this.dir+ Math.sin(this.wave)/4)*this.speed;
-						
-						if(this.x < -15)this.x = canvas.width+5;
-						if(this.y < -15)this.y = canvas.height+5;
-						if(this.x > canvas.width+15)this.x = -15;
-						if(this.y > canvas.height+15)this.y = -15;
-						
-						this.rotation = this.dir+ Math.sin(this.wave)/4;
-						
-						if(this.rolled){
-							this.justRolled = 4;
-							this.paused = true;
-						}else this.justRolled -= 1;
-						this.g = Math.round(Math.min((this.speed/this.baseSpeed)/5, 1)*255)
 					}
+						
+					this.g = Math.round(Math.min((this.speed/this.baseSpeed)/5, 1)*255)
+					
 					
 				},
 				draw: function(){
-					if(!this.paused)context.fillStyle = "rgba("+(255-this.g)+","+this.g+","+this.b+", "+((this.baseSpeed)/6)+")"
-					else {
-						context.fillStyle = "rgba(255,255,255,"+((this.baseSpeed)/60)+")";
-					}
+					context.fillStyle = "rgba("+(255-this.g)+","+this.g+",150, 1)"
+					
 					context.beginPath()
 					context.moveTo(-10,-10);
 					context.lineTo(20,-10)
@@ -118,7 +123,6 @@
 					var distance = Math.sqrt((a*a) + (b*b));
 					if(distance < 300){
 						distance = Math.pow(((300-distance)/300),8)*0.2 + 0.1;
-						cars[ii].paused = false;
 						cars[ii].rolled = false;
 						var power = distance*120;
 						var newDirection = Math.atan2(b,a);
@@ -135,7 +139,6 @@
 			for(var i = 0; i < 300; i+=1){
 				var car = new Car();
 				cars.push(car);
-				mouseMoveObjects.push(car);
 			}
 			
 			setInterval(function(){
@@ -146,7 +149,7 @@
 					cars[i].every();
 					cars[i].render(ctx);
 				}
-			},1);
+			},1000/60);
 			
 			
 		</script>
