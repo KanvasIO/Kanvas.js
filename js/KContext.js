@@ -1,5 +1,578 @@
-function KContext(){
+var Kanvas = new (function(){
+	var tempCanvas = document.createElement('canvas');
+	var tempContext = tempCanvas.getContext('2d');
+	//inject Context Functions
+	if(!tempContext.constructor.overridden){
+		tempContext.constructor.prototype.fillArc = function (xx,yy,rr,start,stop,cw) {
+			this.basicArc(xx,yy,rr,start,stop,cw,true);
+		}
+		
+		tempContext.constructor.prototype.strokeArc = function (xx,yy,rr,start,stop,cw) {
+			this.basicArc(xx,yy,rr,start,stop,cw,false);
+		}
+		tempContext.constructor.prototype.basicArc = function (xx,yy,rr,start,stop,cw,fill) {
+			this.beginPath();
+			this.arc(xx,yy,rr,start||0,stop||Math.PI*2,cw||true);
+			this.closePath();
+			if(fill)this.fill();
+			else this.stroke();
+		}
+		tempContext.constructor.overridden = true;
+	}
+	this.__CANVASCLASSNAME = tempCanvas.constructor.name;
+	
+	//Done Injecting
+	var all = [];
+	
+	this.__addKanvas = function(k){
+		all.push(k);
+	}
+	
+	this.__rotateCoords = function(xx,yy,rr){
+		return [((xx * Math.cos(rr)) - (yy * Math.sin(rr))),((xx * Math.sin(rr)) + (yy * Math.cos(rr)))];
+	}
+	
+	this.__pointInRect = function(xx, yy, left, up, right, down){
+		if(xx > left &&  xx < right && yy > up &&  yy < down)return true;
+		return false
+	}
+	
+	this.create = function(element, properties){
+		return new KanvasElement(this, element, properties);
+	}
+
+	this.class = function(bluePrint){
+		return newKanvasClass(bluePrint)
+	}
+	
+	this.moveTo = function(val1, val2, spd, round){
+		if(Math.abs(val2 - val1) < Math.abs(0.001*val2)) {
+			return val2;
+		}else if(round)return Math.round(val1 + (val2 - val1)/spd);
+		return val1 + (val2 - val1)/spd
+	}
+	
+	this.StageClass = this.class({
+		init:function(){
+			this.dynamic = false;
+			this.isStage = true;
+			this.color = null
+		},
+		predraw:function(context){
+			if(this.color){
+				context.fillStyle = this.color;
+				context.fillRect(0,0,this.kanvas.canvas.width,this.kanvas.canvas.height);
+			}
+		}	
+	});
+})
+function newKanvasClass(bluePrint){
+	var KanvasClass = new Function('this.__init.call(this, arguments);');
+	
+	KanvasClass.prototype = {
+		__init: function(args){
+			this.name = 'Unnamed Class',
+			this.x = 0;
+			this.y = 0;
+			this.scaleX = 1;
+			this.scaleY = 1;
+			this.rotation = 0;
+			this.showBox = false;
+			this.dynamic = true;
+			this.rolled = false;
+			this.onlyRolled = false;
+			this.kanvas = null;
+			this.children = new Array();
+			
+			//this.draw = null;
+			//this.predraw = null;
+			//this.every = null;
+			//this.mouseOver = null;
+			//this.mouseOut = null;
+			//this.mouseMove = null;
+			
+			this.__hitBox = null;
+			this.__hitBoxOverride = false;
+			this.__width = null;
+			this.__height = null;
+			this.__insideX = 0;
+			this.__insideY = 0;
+			this.__needsRedraw = true;
+			this.__drawData = null;
+			this.__globalCoords = [0,0];
+			this.__globalScales = [1,1];
+			this.__globalRotation = 0;
+			this.__toApply = [];
+			this.__blockRoll = false;
+			this.__kanvasObject = true;
+			
+			this.init.apply(this,args);
+			this.__needsRedraw = true;
+		},
+		__render: function(){
+			if(this.parent){
+				delete this.__globalCoords;
+				this.__globalRotation = this.parent.__globalRotation + this.rotation;
+				this.__globalCoords = Kanvas.__rotateCoords(this.x*this.parent.__globalScales[0],
+															this.y*this.parent.__globalScales[1], 
+															this.parent.__globalRotation);
+				this.__globalCoords[0] += this.parent.__globalCoords[0];
+				this.__globalCoords[1] += this.parent.__globalCoords[1];
+				this.__globalScales[0] = this.scaleX * this.parent.__globalScales[0];
+				this.__globalScales[1] = this.scaleY * this.parent.__globalScales[1];
+			}else{
+				this.__globalRotation = this.rotation;
+				this.__globalCoords[0] = this.x;
+				this.__globalCoords[1] = this.y;
+				this.__globalScales[0] = this.scaleX;
+				this.__globalScales[1] = this.scaleY;
+			}
+			this.kanvas.context.save();
+			this.kanvas.context.translate(this.x, this.y);
+			this.kanvas.context.scale(this.scaleX, this.scaleY);
+			this.kanvas.context.rotate(this.rotation);
+			
+			if(this.__needsRedraw){
+				this.__trackDraw();
+			}
+			
+			
+			if(this.predraw)this.predraw(this.kanvas.context);
+			//draw Children
+			for(child in this.children){
+				this.children[child].__render();
+			}
+			if(this.draw)this.draw(this.kanvas.context);
+			
+			
+			
+			
+			this.kanvas.context.restore();
+			if(this.showBox)this.__boxMe(this.kanvas.context);
+		},
+		addEventListener:function(ev_type){
+			if(this.kanvas)this.kanvas.addEventListener(this, ev_type);
+			else if(this.__toApply.indexOf(ev_type)<0)this.__toApply.push(ev_type);
+		},
+		removeEventListener:function(ev_type){
+			if(this.kanvas)this.kanvas.removeEventListener(this, ev_type);
+			else if(this.__toApply.indexOf(ev_type)>=0)this.__toApply.splice(this.__toApply.indexOf(ev_type),1);
+		},
+		addChild:function(child){
+			var ind = this.children.indexOf(child);
+			if(ind>=0)this.children.splice(ind,1);
+			this.children.push(child);
+			child.parent = this;
+			//child.__needsRedraw = true;
+			if(child.onAdd)child.onAdd();
+		},
+		removeChild:function(index){
+			var ind;
+			if(typeof(index) == 'number')ind = index;
+			else ind = this.children.indexOf(index);
+			
+			if(ind>=0){
+				var child = this.children.splice(ind,1)[0];
+				if(child.onRemove)child.onRemove();
+				child.parent = null;
+			}
+		},
+		refocus:function(child){
+			if(!child && this.parent)this.parent.refocus(this);
+			if(this.children.indexOf(child)>=0){
+				this.removeChild(child);
+				this.addChild(child);
+			}
+		},
+		__every:function(kanvas){
+		
+			this.kanvas = kanvas;
+			while(this.__toApply.length>0 && this.kanvas){
+				this.addEventListener(this.__toApply[0])
+				this.__toApply.splice(0,1);
+			}
+			//run every
+			if(this.every){
+				this.every();
+			}
+			//run childrens every
+			var tempChildren = this.children.valueOf();
+			for(child in tempChildren)tempChildren[child].__every(kanvas);
+			tempChildren = null
+			
+			if(this.postevery){
+				this.postevery();
+			}
+		},
+		init:function(){
+			console.log('init not defined on ' + this.name);
+		},
+		
+		
+		__trackDraw: function(){
+			this.kanvas.__altContext.beginTrack({rot:0})//this.rotation})
+			
+			if(this.predraw)this.predraw(this.kanvas.__altContext);
+			if(this.draw)this.draw(this.kanvas.__altContext);
+			
+			var temp = this.kanvas.__altContext.closeTrack();
+			
+			
+			this.__setHitBox(temp.hitBox, true)
+			this.__drawData = temp.data;
+			
+			temp = null
+			if(!this.dynamic || this.__hitBoxOverride)this.__needsRedraw = false;
+		},
+		__setHitBox: function(hb, ovrd){
+			if(!hb)return false;
+			if(!ovrd)this.__hitBoxOverride = true;
+			if(ovrd && this.__hitBoxOverride)return false;
+			this.__hitBox =  hb;
+			if(typeof(this.__hitBox) == 'number'){
+				this.__insideX = this.__hitBox;
+				this.__insideY = this.__hitBox;
+				this.__width =  this.__hitBox*2;
+				this.__height = this.__hitBox*2;
+			}else if(this.__hitBox.length == 4 && typeof(this.__hitBox[0])=='number'){
+				this.__insideX = -hb[0];
+				this.__insideY = -hb[1];
+				this.__width =  hb[2]-hb[0];
+				this.__height =  hb[3]-hb[1];
+			} 
+		},
+		hitTest: function(){
+			if(this.__hitBox == null)return false;
+			if(arguments == null)return false;
+			if(arguments.length == 2 && typeof(arguments[0])=='number'&& typeof(arguments[1])=='number'){
+				return this.hitTestLocal.apply(this, this.__globalToLocal(arguments[0],arguments[1]));			
+			}
+		},
+		hitTestLocal:function(){
+			if(this.__hitBox == null)return false;
+			if(arguments == null)return false;
+			if(arguments.length == 2 && typeof(arguments[0])=='number'&& typeof(arguments[1])=='number'){
+				var tempX = arguments[0]
+				var tempY = arguments[1]
+			}
+			if(typeof(this.__hitBox) == 'number'){
+				return (Math.sqrt((tempX*tempX)+(tempY*tempY)) < this.__hitBox)
+			}else if(this.__hitBox.length == 4 && typeof(this.__hitBox[0])=='number'){
+				return Kanvas.__pointInRect(tempX, tempY, 
+											this.__hitBox[0],
+											this.__hitBox[1],
+											this.__hitBox[2],
+											this.__hitBox[3])
+			}
+			
+		},
+		__clearCustomHitBox: function(){
+			this.__hitBoxOverride = false;
+		},
+		__globalToLocal: function(xx,yy){
+			return Kanvas.__rotateCoords(	(xx - this.__globalCoords[0])/this.__globalScales[0], 
+											(yy - this.__globalCoords[1])/this.__globalScales[1],
+											-this.__globalRotation || 0);
+		},
+		__boxMe: function(cc){
+			cc.save();
+			cc.translate(this.x, this.y);
+			cc.rotate(this.rotation);
+			
+			var needsClosure = false;
+			if(this.__hitBox && typeof(this.__hitBox) == 'number'){
+				needsClosure = true;
+				cc.save();
+				cc.scale(this.scaleX, this.scaleY);
+				cc.beginPath();
+				cc.arc(0,0,this.__hitBox, 0, Math.PI*2, true);
+				cc.closePath()
+			}
+			else if(this.__width){
+				needsClosure = true;
+				cc.save();
+				cc.scale(this.scaleX, this.scaleY);
+				cc.beginPath();
+				cc.rect(-this.__insideX,-this.__insideY,this.__width,this.__height);
+				cc.closePath()
+			}
+			
+			if(needsClosure){
+				cc.strokeStyle = "#FFF";
+				cc.stroke();
+				cc.lineWidth = 1.5 / ((this.__globalScales[0]+this.__globalScales[1])/2);
+				cc.strokeStyle = "#000";
+				cc.setLineDash([3,3])
+				cc.stroke();
+				cc.restore();
+			}
+			
+			//cc.scale(1/this.__globalScales[0], 1/this.__globalScales[1]);
+			cc.fillStyle = "#000";
+			cc.fillRect(-1.5,-4,3,8);
+			cc.fillRect(-4,-1.5,8,3);
+			cc.fillStyle = "#fff";
+			cc.fillRect(-0.5,-3,1,6);
+			cc.fillRect(-3,-0.5,6,1);
+			
+			cc.restore();
+			
+		},
+		
+		__processDraw: function(cc){
+			if(!this.__drawData)return false;
+			for(var ii in this.__drawData){
+				if(cc[this.__drawData[ii][0]])cc[this.__drawData[ii][0]].apply(cc, this.__drawData[ii][1]);
+				else{
+					switch(this.__drawData[ii][0]){
+						case 'trace':
+							traceMe();
+							break
+						
+						case 'setVar':
+							if(!cc[this.__drawData[ii][2]])console.log('Property ' + this.__drawData[ii][2] + " doesn't exist on Context");
+							else cc[this.__drawData[ii][2]] = this.__drawData[ii][1][0];
+							break;
+						default:
+							console.log('Function '+this.__drawData[ii][0]+ " doesn't exist on Context");
+							break
+					}
+				}
+			}
+		}
+	}
+	
+
+
+	KanvasClass.prototype.__defineSetter__('rotation',function(r){
+		this.__rotationChange = true;
+		this.__rotation = r;
+	})
+	KanvasClass.prototype.__defineGetter__('rotation', function(){
+		return this.__rotation;
+	});
+
+	KanvasClass.prototype.__defineGetter__('width', function(){
+		return this.__width;
+	});
+
+	KanvasClass.prototype.__defineGetter__('height', function(){
+		return this.__height;
+	});
+
+	if(typeof(bluePrint)=="function"){
+		KanvasClass.prototype.draw = bluePrint.bind(KanvasClass.prototype);
+	}else{
+		for(var prop in bluePrint){
+			if(typeof(bluePrint[prop])=='function'){
+				KanvasClass.prototype[prop] = bluePrint[prop].bind(KanvasClass.prototype);
+			}
+			KanvasClass.prototype[prop] = bluePrint[prop];
+		}
+	}
+	
+	bluePrint = null;
+	return KanvasClass;
+}
+function KanvasElement(_mainKanvas, element, props){
+	if(!props)props = {};
+	
+	//main vars
+	var _self = this;
+	this.Kanvas = _mainKanvas;
+	this.mouseX = 0;
+	this.mouseY = 0;
+	this.mouseDown = false;
+	this.paused = false;
+	this.stage = new this.Kanvas.StageClass();
+	this.baseFPS = props.baseFPS||60;
+	
+	
+	//start canvas
+	this.makeCanvas(element);
+	this.Kanvas.__addKanvas(this);
+	this.__setWidthHeight(props.width, props.height)
+	this.context = this.canvas.getContext('2d');
+	this.canvas.kanvas = this;
+	
+	//other vars
+	this.__altContext = new KContext(this.context);
+	this.__trackingMouse = false;
+	this.__mouseMoveListeners = [];
+	this.__mouseDownListeners = [];
+	this.__needsMouseCalculation = true;
+	this.__AdHoc = function(){_self.MAIN()}
+	
+	this.startTrackingMouse();
+	if(!props.still)this.animate();
 	//
+}
+KanvasElement.prototype.addEventListener = function(object, type){
+	var tempAr = this.getListenersFor(type);
+	if(tempAr && tempAr.indexOf(object)<0){
+		tempAr.push(object);
+	}
+}
+
+KanvasElement.prototype.removeEventListener = function(object, type){
+	var tempAr = this.getListenersFor(type);
+	if(tempAr){
+		var tempInd = tempAr.indexOf(object);
+		if(tempInd>0){
+			tempAr.splice(tempInd,1);
+		}
+	}
+}
+KanvasElement.prototype.getListenersFor = function(type){
+	var ar;
+	switch(type.toUpperCase()){
+		case 'MOUSEDOWN':
+		case 'MOUSEUP':
+			ar = this.__mouseDownListeners
+			break;
+		case 'MOUSEMOVE':
+			ar = this.__mouseMoveListeners
+			break;
+		default:
+			console.log('event type', type, 'not found.', 'mouseDown, mouseOver, and mouseMove are the only supported ATM');
+			break;
+	}
+	return ar;
+}
+KanvasElement.prototype.animate = function(stop){
+	if(stop)clearInterval(this.__AdHoc);
+	else setInterval(this.__AdHoc,1000/this.baseFPS);
+}
+
+KanvasElement.prototype.MAIN = function(){
+	this.runMouseRoll();
+	this.stage.__every(this);
+	this.stage.__render()
+}
+
+KanvasElement.prototype.makeCanvas = function(element){
+	this.__containingElement = element;
+	if(element.constructor && element.constructor.name==this.Kanvas.__CANVASCLASSNAME){//object is a canvas
+		this.canvas = element;
+	}else{//object to put a canvas in
+		this.canvas = document.createElement('canvas');
+		
+		if(element.append){
+			element.append(this.canvas); 
+		}else if(element.appendChild){
+			element.appendChild(this.canvas);
+		}
+	}
+}
+
+KanvasElement.prototype.__setWidthHeight = function(ww,hh){
+	if(this.__containingElement.constructor && this.__containingElement.constructor.name==this.Kanvas.__CANVASCLASSNAME){//object is a canvas
+		this.__containingElement.width = ww||200;
+		this.__containingElement.height = hh||200;
+	}else{
+		if(ww)this.canvas.width = ww;
+		else this.canvas.width = $(this.__containingElement).width();
+		
+		if(hh)this.canvas.height = hh;
+		else this.canvas.height = $(this.__containingElement).height();
+	}
+}
+KanvasElement.prototype.startTrackingMouse = function(){
+	if(!this.__trackingMouse){
+		this.canvas.addEventListener('mousemove', this.mouseMoveHandler);
+		this.canvas.addEventListener('mousedown', this.mouseDownHandler);
+		this.canvas.addEventListener('mouseup', this.mouseUpHandler);
+		this.__trackingMouse = true;
+	}
+}
+KanvasElement.prototype.stopTrackingMouse = function(){
+	if(this.__trackingMouse){
+		this.canvas.removeEventListener('mousemove', this.mouseMoveHandler);
+		this.canvas.removeEventListener('mousedown', this.mouseDownHandler);
+		this.canvas.removeEventListener('mouseup', this.mouseUpHandler);
+		this.__trackingMouse = false;
+	}
+}
+KanvasElement.prototype.mouseMoveHandler = function(e){
+	//From Canvas Scope.
+	if(e.clientX){
+		var rect = this.getBoundingClientRect();
+		if(rect){
+			this.kanvas.mouseX = e.clientX - rect.left,
+			this.kanvas.mouseY = e.clientY - rect.top
+		}else{
+			this.kanvas.mouseX = e.clientX - this.offsetLeft;
+			this.kanvas.mouseY = e.clientY - this.offsetLeft;
+		}
+	}else if(e.offsetX) {
+		this.kanvas.mouseX = e.offsetX;
+		this.kanvas.mouseY = e.offsetY;
+	}else if(e.layerX) {
+		this.kanvas.mouseX = e.layerX;
+		this.kanvas.mouseY = e.layerY;
+	}else console.log("Couldn't Determine Mouse Coordinates", e.offsetX, e.layerX, e.pageX, e.clientX);
+}
+KanvasElement.prototype.mouseDownHandler = function(e){this.kanvas.onMouseDown();}
+KanvasElement.prototype.mouseUpHandler = function(e){this.kanvas.onMouseUp();}
+KanvasElement.prototype.onMouseDown = function(){
+	this.mouseDown = true;
+	var allClicked = [];
+	for(var object in this.__mouseDownListeners){
+		this.getMouseCoords(this.__mouseDownListeners[object])
+		if(this.__mouseDownListeners[object].trackyeah)console.log(this.__mouseDownListeners[object].mouseX, this.__mouseDownListeners[object].mouseY,this.__mouseDownListeners[object].rolled )
+		if(this.__mouseDownListeners[object].rolled){
+			allClicked.push(this.__mouseDownListeners[object]);
+			if(this.__mouseDownListeners[object].mouseDown)this.__mouseDownListeners[object].mouseDown();
+		}
+	}
+	
+	
+}
+KanvasElement.prototype.onMouseUp = function(){
+	this.mouseDown = false;
+	for(var object in this.__mouseDownListeners){
+		this.getMouseCoords(this.__mouseDownListeners[object])
+		if(this.__mouseDownListeners[object].mouseUp){
+			this.__mouseDownListeners[object].mouseUp(this.__mouseDownListeners[object].rolled);
+		}
+		
+	}
+}
+KanvasElement.prototype.runMouseRoll = function(){
+	var _rolled = null;
+	for(var object in this.__mouseMoveListeners){
+		var ob = this.__mouseMoveListeners[object];
+		this.getMouseCoords(ob);
+		
+		ob.onlyRolled = false;
+		var rolledBefore = ob.rolled;
+		
+		
+		ob.rolled = this.determineRolled(ob)
+		if(ob.rolled && ob.__blockRoll && !_rolled)_rolled = ob;
+		if(_rolled != ob && ob.rolled && ob.mouseOut)ob.mouseOut()
+		
+		if(ob.rolled && ob.mouseMove)ob.mouseMove();
+		
+		if(!rolledBefore && ob.rolled && !_rolled && ob.mouseOver)ob.mouseOver();
+		if(rolledBefore && !ob.rolled && !_rolled && ob.mouseOut)ob.mouseOut();
+			
+	}
+	if(_rolled)_rolled.onlyRolled = true;
+}
+KanvasElement.prototype.getMouseCoords = function(ob){
+	var temp = ob.__globalToLocal(this.mouseX, this.mouseY);	
+
+	ob.mouseX = temp[0];
+	ob.mouseY = temp[1];
+}
+	
+	
+KanvasElement.prototype.determineRolled = function(ob){
+	return ob.hitTestLocal(ob.mouseX,ob.mouseY);
+}
+
+function KContext(model){
 	var self = this;
 	
 	var supportedFunctions = ['trace', 'boxMe', 'fillArc'];
@@ -12,13 +585,8 @@ function KContext(){
 	var TRANS, SCALE, ROT;
 	var _TRANS, _SCALE, _ROT;
 	
-	var tempCan = document.createElement('canvas');
-	var tempCTX = tempCan.getContext('2d');
+	for(xx in model)((typeof(model[xx]) == "function")?(supportedFunctions):(supportedVars)).push(xx);
 	
-	for(xx in tempCTX)((typeof(tempCTX[xx]) == "function")?(supportedFunctions):(supportedVars)).push(xx);
-	
-	tempCan = null;
-	tempCTX = null;
 	
 	var proxyFunc = function(){
 		if(!tracking)return false;
@@ -72,7 +640,7 @@ function KContext(){
 	}
 	//
 	var hasPoint = function(xx, yy){
-		var temp = rotateCoords(xx,yy, ROT);
+		var temp = Kanvas.__rotateCoords(xx,yy, ROT);
 		xx = temp[0] * SCALE[0] + REAL[0];
 		yy = temp[1] * SCALE[1] + REAL[1];
 		
@@ -138,12 +706,21 @@ function KContext(){
 				case 'fillArc':
 				case 'strokeArc':
 				case 'arc':
-					var temp = args[2] * 0.8
-					hasPoint(args[0] - temp, args[1] - temp);
-					hasPoint(args[0] + temp, args[1] - temp);
-					hasPoint(args[0] + temp, args[1] + temp);
-					hasPoint(args[0] - temp, args[1] + temp);
+					for(var ii = 0; ii < 4; ii += 1){
+						var r = (args[3]||0) + (((args[4]||Math.PI*2) - (args[3]||0)) * (ii/3));
+						hasPoint(args[0] + Math.cos(r)*args[2], args[3] +args[1]+ Math.sin(r)*args[2]);
+					}
 					temp = null;
+					break;
+				case 'drawImage':
+					if(args[0] && args[0].width){
+						var ww = (args.length>3)?(args[3]):(args[0].width)
+						var hh = (args.length>3)?(args[4]):(args[0].height)
+						hasPoint(args[1]	 , args[2]);
+						hasPoint(args[1]+ ww , args[2] + hh);
+						hasPoint(args[1]+ ww , args[2]);
+						hasPoint(args[1]	 , args[2] + hh);
+					}
 					break;
 			}
 		}
@@ -160,226 +737,11 @@ function KContext(){
 		return __closeTrack();
 	}
 	
-	var traceMe = function(){
-		console.log('ME:');
-		console.log(xy, 'xy');
-		console.log(mxy, 'mxy');
-		console.log(TRANS, 'trans');
-		console.log(SCALE, '');
-		console.log(ROT, 'rotation');
-	}
 	this.traceMe = function(){					
 		traceMe();
 	}
-	
 }
 
-var rotateCoords = function(xx,yy,rr){
-	return [((xx * Math.cos(rr)) - (yy * Math.sin(rr))),((xx * Math.sin(rr)) + (yy * Math.cos(rr)))];
-}
 
-var pointInRect = function(xx, yy, left, up, right, down){
-	if(xx > left &&  xx < right && yy > up &&  yy < down)return true;
-	else return false
-}
-	
-var mouseX = 0;
-var mouseY = 0;
 
-function mouseMoveHandler(e){
-	//
-	if(e.clientX){
-		var rect = this.getBoundingClientRect();
-		if(rect){
-			mouseX = e.clientX - rect.left,
-			mouseY = e.clientY - rect.top
-		}else{
-			mouseX = e.clientX - this.offsetLeft;
-			mouseY = e.clientY - this.offsetLeft;
-		}
-	}else if(e.offsetX) {
-		mouseX = e.offsetX;
-		mouseY = e.offsetY;
-	}else if(e.layerX) {
-		mouseX = e.layerX;
-		mouseY = e.layerY;
-	}else console.log("Couldn't Determine Mouse Coordinates", e.offsetX, e.layerX, e.pageX, e.clientX);
-	
-}
 
-function mouseMove(){
-	for(var object in mouseMoveObjects){
-		var temp = rotateCoords((mouseX - mouseMoveObjects[object].x)/mouseMoveObjects[object].scaleX, 
-								(mouseY - mouseMoveObjects[object].y)/mouseMoveObjects[object].scaleY,
-								-mouseMoveObjects[object].rotation);
-	
-		mouseMoveObjects[object].mouseX = (temp[0])*mouseMoveObjects[object].scaleX;
-		mouseMoveObjects[object].mouseY = (temp[1])*mouseMoveObjects[object].scaleY;
-		
-		if(mouseMoveObjects[object].__hitBox && mouseMoveObjects[object].justRolled<0){
-			mouseMoveObjects[object].rolled = pointInRect(	temp[0],temp[1],
-															mouseMoveObjects[object].__hitBox[0],
-															mouseMoveObjects[object].__hitBox[1],
-															mouseMoveObjects[object].__hitBox[2],
-															mouseMoveObjects[object].__hitBox[3]);
-		
-		}else mouseMoveObjects[object].rolled = false;
-	}
-}
-
-function newClass(bluePrint){
-	var KanvasClass = new Function('this.__init.call(this, arguments);');
-	KanvasClass.prototype = {
-		name: 'Unnamed Class',
-		x: 0,
-		y: 0,
-		scaleX: 1,
-		scaleY: 1,
-		rotation: 0,
-		showBox: false,
-		dynamic: true,
-		rolled:false,
-		__rotation: null,
-		__hitBox: null,
-		__width : null,
-		__height : null,
-		__insideX : 0,
-		__insideY : 0,
-		__drawFunction: null,
-		__needsRedraw: true,
-		__drawData: null,
-		__globalX: 0,
-		__globalY: 0,
-		render: function(cc){
-			//if(this.every)this.every();
-			if(this.__needsRedraw){
-				this.__trackDraw();
-			}else{
-				this.__drawFunction();
-			}
-			cc.save();
-			cc.translate(this.x, this.y);
-			cc.scale(this.scaleX, this.scaleY);
-			cc.rotate(this.rotation);
-			this.__processDraw(cc);
-			cc.restore();
-			if(this.showBox)this.__boxMe(cc);
-		},
-		init:function(){
-			console.log('init not defined on ' + this.name);
-		},
-		__postDrawFunction:function(){
-			if(!this.__drawFunction)return false;
-			this.__needsRedraw = true;
-		},
-		__init: function(aa){
-			this.init.apply(this,aa);
-			this.every();
-			this.__drawFunction();
-			this.__postDrawFunction();
-		},
-		__trackDraw: function(){
-		
-			if(!this.__drawFunction)return false;
-			context.beginTrack({rot:0})//this.rotation})
-			this.__drawFunction();
-			var temp = context.closeTrack();
-			if(temp.hitBox){
-				this.__hitBox =  temp.hitBox;
-				this.__insideX = -temp.hitBox[0];
-				this.__insideY = -temp.hitBox[1];
-				this.__width =  temp.hitBox[2]-temp.hitBox[0];
-				this.__height =  temp.hitBox[3]-temp.hitBox[1];
-			}
-			this.__drawData = temp.data;
-			
-			temp = null
-			if(!this.dynamic)this.__needsRedraw = false;
-		},
-		__boxMe: function(cc){
-			cc.save();
-			cc.translate(this.x, this.y);
-			cc.rotate(this.rotation);
-			cc.scale(this.scaleX, this.scaleY);
-			cc.fillStyle = "#000";
-			cc.fillRect(-1.5,-4,3,8);
-			cc.fillRect(-4,-1.5,8,3);
-			cc.fillStyle = "#fff";
-			cc.fillRect(-0.5,-3,1,6);
-			cc.fillRect(-3,-0.5,6,1);
-			
-			if(this.__width){
-				cc.beginPath();
-				cc.rect(this.__hitBox[0],this.__hitBox[1],this.__hitBox[2]-this.__hitBox[0],this.__hitBox[3]-this.__hitBox[1]);
-				cc.closePath();
-				cc.strokeStyle = "#fff";
-				cc.stroke();
-				//cc.lineWidth = 1.5;
-				//cc.strokeStyle = "#edd";
-				//cc.setLineDash([3,3])
-				//cc.stroke();
-				cc.restore();
-			}
-			cc.restore();
-		},
-		__processDraw: function(cc){
-			if(!this.__drawData)return false;
-			for(var ii in this.__drawData){
-				if(cc[this.__drawData[ii][0]])cc[this.__drawData[ii][0]].apply(cc, this.__drawData[ii][1]);
-				else{
-					switch(this.__drawData[ii][0]){
-						case 'trace':
-							traceMe();
-							break
-						case 'fillArc':
-							cc.beginPath();
-							cc.arc.apply(cc, this.__drawData[ii][1]);
-							cc.closePath();
-							cc.fill();
-							break;
-						case 'strokeArc':
-							cc.beginPath();
-							cc.arc.apply(cc, this.__drawData[ii][1]);
-							cc.closePath();
-							cc.stroke();
-							break;
-						case 'setVar':
-							if(!cc[this.__drawData[ii][2]])console.log('Property ' + this.__drawData[ii][2] + " doesnt exist on Context");
-							else cc[this.__drawData[ii][2]] = this.__drawData[ii][1][0];
-							break;
-						default:
-							console.log('Function '+this.__drawData[ii][0]+ " doesn't exist on Context");
-							break
-					}
-				}
-			}
-		}
-	}
-	
-	if(typeof(bluePrint)=="function"){
-		KanvasClass.prototype.__drawFunction = bluePrint.bind(KanvasClass.prototype);
-	}else{
-		for(var prop in bluePrint){
-			if(prop == "draw")KanvasClass.prototype['__drawFunction'] = bluePrint[prop];
-			else KanvasClass.prototype[prop] = bluePrint[prop];
-		}
-	}
-	KanvasClass.prototype.__defineSetter__('draw',function(d){
-		this.__drawFunction = d;
-		this.__postDrawFunction(d);
-	})
-	KanvasClass.prototype.__defineGetter__('draw', function(){
-		return this.__drawFunction;
-	});
-	KanvasClass.prototype.__defineSetter__('rotation',function(r){
-		this.__rotationChange = true;
-		this.__rotation = r;
-	})
-	KanvasClass.prototype.__defineGetter__('rotation', function(){
-		return this.__rotation;
-	});
-	
-		
-	bluePrint = null;
-	return KanvasClass;
-}

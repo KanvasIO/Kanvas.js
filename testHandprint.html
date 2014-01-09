@@ -1,0 +1,206 @@
+ <html>
+	<head>
+		<title>Kanvas</title>
+		
+		<script type="application/javascript", src="lib/jquery.js"></script>
+		
+	</head>  
+	<body style="overflow: hidden">  
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			
+			var kanvas = Kanvas.create(document.body, {baseFPS:50});
+			var canvas = kanvas.canvas;
+			var context = kanvas.context;
+			var stage = kanvas.stage;
+			stage.color = '#77bbff';
+			
+			var MainElement = Kanvas.class({
+				init:function(){
+					this.arrowLength = 500;
+					this.sliderPecent = 0.5;
+					this.arrowWidth = 50;
+					this.percentBuffer = 0.2;
+					this.halfArrowWidth = this.arrowWidth/2;
+					this.angleDifference = Math.PI*2/4;
+					this.halfAngle = this.angleDifference/2;
+					this.halfHeight = Math.sin(this.halfAngle)*this.arrowLength;
+					this.baseWidth = Math.cos(this.halfAngle) * this.arrowLength;
+					this.Padding = 60;
+					this.Width = this.baseWidth;
+					this.Height = this.halfHeight * 2;
+					this.Ratio = this.Width/this.Height
+					
+					this.origin = [this.Width, this.halfHeight];
+					this.topCoord = [0, 0];
+					this.botCoord = [0, this.Height];
+					this.currentTop = [0,0];
+					this.currentBot = [0,0];
+					this.currentTip = [0,0];
+					this.currentInlet = [0,0];
+					this.arcProps = [0,0];
+					
+					//aaaa
+					this.minJoin = this.origin[0] - ((this.arrowWidth * 2) / Math.sqrt(2)) * Math.max(Math.PI/(this.angleDifference)/2,0.9)
+															
+					
+					this.sliderWidth = this.Width * this.sliderPecent
+					
+					this.slider = new Slider(this.Padding + this.origin[0]- this.halfArrowWidth*0.9 - this.sliderWidth, 
+												this.Padding + this.origin[1], this.sliderWidth);
+					
+					this.percent = 1;
+			
+					
+					this.unchanged = true;
+					this.addChild(this.slider);
+				},
+				postevery:function(){
+					this.percent = this.slider.percent;
+					if(this.percent>0.87)this.unchanged = true;
+					else this.unchanged = false;
+					
+					
+					this.percentBuffer = Math.PI/this.angleDifference * 0.1;
+				
+					this.currentTop[0] = this.origin[0]*((this.percent+this.percentBuffer)/(1+this.percentBuffer))
+					this.currentTop[1] = this.origin[1]*((this.percent+this.percentBuffer)/(1+this.percentBuffer))
+					
+					this.currentBot[0] = this.currentTop[0]
+					this.currentBot[1] = this.Height - this.currentTop[1]
+					
+					this.currentTip[0] = this.slider.xVal + this.halfArrowWidth - this.Padding;
+					this.currentTip[1] = this.origin[1];
+					
+					if(!this.unchanged){
+						this.arcProps[0] = this.currentTip[0] - this.currentTop[0]
+						this.arcProps[1] = this.currentBot[1] - this.currentTop[1];
+						this.curveRadius = (this.arcProps[0]/2)+(Math.pow(this.arcProps[1],2)/(8*(this.arcProps[0])));
+					}
+				},
+				draw:function(cc){
+					//bg
+					cc.save();
+					
+					cc.globalAlpha = 0.2;
+					cc.lineWidth = 3;
+					cc.strokeStyle = "#fff";
+					cc.fillStyle = "#fff";
+					cc.fillRect(0,0,this.Width + this.Padding*2,this.Height + this.Padding*2);
+					cc.strokeRect(0,0,this.Width + this.Padding*2,this.Height + this.Padding*2);
+					
+					cc.globalAlpha = 1;
+					cc.translate(this.Padding,this.Padding)
+					
+					
+					cc.strokeStyle = "#FFF";
+					cc.beginPath();
+					cc.lineWidth = 0.5
+					cc.moveTo(this.topCoord[0], this.topCoord[1]);
+					cc.lineTo(this.origin[0], this.origin[1]);
+					cc.lineTo(this.botCoord[0], this.botCoord[1]);
+					cc.stroke();
+					
+					
+					cc.strokeStyle = "#FFF";
+					cc.lineWidth = 2;
+					cc.beginPath();
+					cc.moveTo(this.topCoord[0], this.topCoord[1])
+					if(!this.unchanged){
+						cc.arc(	Math.round(this.currentTip[0]-this.curveRadius),
+								Math.round(this.currentTip[1]),
+								Math.round(this.curveRadius),
+								-Math.atan2(this.arcProps[1]/2, this.curveRadius - this.arcProps[0]),
+								Math.atan2(this.arcProps[1]/2, this.curveRadius - this.arcProps[0]));
+					}else cc.lineTo(this.origin[0], this.origin[1])
+					cc.lineTo(this.botCoord[0], this.botCoord[1])
+					cc.lineTo(	this.botCoord[0] + Math.cos(Math.PI/2+this.halfAngle)*this.arrowWidth, 
+								this.botCoord[1] - Math.sin(Math.PI/2+this.halfAngle)*this.arrowWidth)
+					if(this.currentTip[0] - this.arrowWidth*1.1 <this.minJoin){
+						cc.arc(	Math.round(this.currentTip[0]-this.curveRadius),
+									Math.round(this.currentTip[1]),
+									Math.round(Math.max(0, this.curveRadius-this.arrowWidth)),
+									Math.atan2(this.arcProps[1]/2, this.curveRadius - this.arcProps[0]),
+									-Math.atan2(this.arcProps[1]/2, this.curveRadius - this.arcProps[0]),
+									true);
+					}else cc.lineTo(this.minJoin, this.origin[1])
+					cc.lineTo(	this.topCoord[0] - Math.cos(Math.PI/2-this.halfAngle)*this.arrowWidth, 
+								this.topCoord[1] + Math.sin(Math.PI/2-this.halfAngle)*this.arrowWidth)
+							
+								
+					cc.closePath();
+					cc.stroke();
+					
+					cc.restore();
+				}
+			});
+			
+			var Slider = Kanvas.class({
+				init:function(xx,yy,ww,hh){
+					this.x = xx;
+					this.y = yy;
+					this.Width = ww;
+					this.Height = hh||10;
+					this.percent = 1;
+					this.xVal = 1;
+					var This = this;
+					
+					this.handle = new (Kanvas.class({
+						init:function(){
+							this.__setHitBox(25)
+						},
+						draw:function(cc){
+							cc.fillStyle = '#5ff';
+							cc.fillArc(0,0,25);
+						},
+						mouseDown:function(){
+							this.dragging = true;
+							this.grabX = this.mouseX;
+						},
+						mouseUp:function(){
+							this.dragging = false;
+						}
+					}))();
+					this.handle.dragging = false;
+					this.handle.x = this.Width;
+					
+					this.addEventListener('mousemove')
+					this.handle.addEventListener('mousemove')
+					this.handle.addEventListener('mousedown')
+					
+					this.snap = 0.9;
+					this.tsnap = this.snap*0.9;
+					this.addChild(this.handle);
+					this.every(true);
+					
+				},
+				every:function(tr){
+					if(this.handle.dragging){
+						this.handle.x = Math.min(Math.max(0, this.mouseX-this.handle.grabX), this.Width);
+						if(this.handle.x/this.Width > this.tsnap)this.handle.x = this.Width*this.snap;
+						this.percent = this.handle.x/this.Width
+						this.xVal =  this.Width*this.percent + this.x;
+					}else if(tr){
+						this.handle.x = this.Width*this.snap*1.01;
+						this.percent = 1;
+						this.xVal =  this.Width*this.percent + this.x;
+					}
+				},
+				predraw:function(cc){
+					//cc.fillStyle = "#aaf";
+					//cc.fillRect(0,-this.Height/2,this.Width * this.snap, this.Height);
+				}
+			});
+			
+
+			
+			var main = new MainElement();
+			main.x = 100;
+			main.y = 100;
+			
+			stage.addChild(main);
+		</script>
+		
+	</body>  
+</html>  

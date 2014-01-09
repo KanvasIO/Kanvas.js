@@ -17,30 +17,25 @@
 		<script type="application/javascript", src="js/KContext.js"></script>
 		
 		<script>
-			var canvas = document.createElement('canvas');
-			canvas.width = $(window).width();
-			canvas.height = $(window).height();
-			$('body').append(canvas);
-			var ctx = canvas.getContext('2d');
-			var context = new KContext();
+			
+			var kanvas = Kanvas.create(document.body, {baseFPS:70});
 		
-			
-			
-			
-			var Chain = newClass({
+			var canvas = kanvas.canvas;
+			kanvas.stage.color = "#000";
+			var Chain = Kanvas.class({
 				name: 'Chain Object',
 				init: function(sys,ii){
 					this.dynamic = false;
 					this.numBros = sys.numChains;
 					this.speed = (this.numBros-ii)*0.001+0.001;
-					var c = Math.round((this.numBros-ii)*(150/this.numBros))
+					var c = 175-Math.round((this.numBros-ii)*(150/this.numBros))
 					this.color = "rgba("+c+","+c+","+c+",1)";
 					this.baselength = sys.segLength;
 					this.length = this.baselength;
 					this.brother = null;
 					this.system = sys;
-					//this.showBox = true;
 					this.rotation = 0//Math.random()*Math.PI*2;
+					this.addEventListener('mousemove');
 				},
 				every: function(){
 					this.x = this.x || 0;
@@ -51,36 +46,39 @@
 						this.x = this.brother.x + Math.cos(this.brother.rotation)*this.brother.length;
 						this.y = this.brother.y + Math.sin(this.brother.rotation)*this.brother.length;
 					}else{
-						this.x = this.system.x;
-						this.y = this.system.y;
+						this.x = 0
+						this.y = 0;
 					}
 					this.rotation += ((this.speed + this.system.totalSpeed) * this.system.totalVar)
 					this.system.totalSpeed += this.speed;
 					this.system.totalSpeed *= this.system.speedVar;
 				},
-				draw: function(){
-					context.fillStyle = this.color;
+				draw: function(context){
+					context.fillStyle = (this.rolled)?("#f72"):(this.color);
 					context.fillRect(-2,-5,this.length+4,10);
 					
 				}
 				
 			});
 			
-			var Claw = newClass({
+			var Claw = Kanvas.class({
 				name: 'Claw Object',
-				
 				init: function(){
 					Chain.prototype.init.apply(this,this.init.arguments);
 					this.every = Chain.prototype.every.bind(this);
 					this.color = "#85c";
 					this.wave = 0;
 					this.alpha = 0.2;
-					this.showBox = true;
+					this.scaleX = 2;
+					this.scaleY = 2;
+					this.trackyeah = true;
 					this.dynamic = true;
+					this.addEventListener('mousemove');
 					
 				},
-				draw: function(){
-					context.fillStyle = this.color;
+				draw: function(context){
+				
+					context.fillStyle = (this.rolled)?("#f72"):(this.color);
 					if(this.wave<3){
 						this.wave += 0.01
 						this.snap = 0.1 + 0.3 * (1-Math.pow(Math.sin(this.wave),20));
@@ -90,7 +88,7 @@
 					
 					context.save()
 					context.rotate(-Math.PI*this.snap);
-					//context.scale(1.5,1.5);
+					//this.context.scale(1.5,1.5);
 					context.fillArc(18,0,4, 0, Math.PI*2, true); 
 					context.fillRect(0,-3, 18,6);
 					context.translate(18,0)
@@ -105,7 +103,7 @@
 					
 					
 					context.save()
-					//context.scale(1.5,1.5);
+					//this.context.scale(1.5,1.5);
 					context.rotate(Math.PI*this.snap);
 					context.fillArc(18,0,4, 0, Math.PI*2, true); 
 					context.fillRect(0,-3, 18,6);
@@ -122,71 +120,48 @@
 				
 			});
 			
-			var System = newClass({
+			var System = Kanvas.class({
 				name: 'System Object',
 				init: function(xx,yy){
 					this.x = xx;
 					this.y = yy;
 					this.totalSpeed = 0;
-					this.showBox = false;
+					this.dynamic = false;
 					this.speedFactor = 20*Math.random();
 					this.speedVar = 0.5 + 0.4 * Math.random();
 					this.speedFactor2 = 0.6 + 0.6 * Math.random();
 					this.totalBase = 0//0.6 + 1.2 * Math.random();
-					this.numChains = Math.ceil(30 + 10 * Math.random());
+					this.numChains = Math.ceil(2 + 10 * Math.random());
 					this.segLength = Math.ceil(20 + 10 * Math.random());
 					this.speediness = 0.005 + 0.007 * Math.random();
 					this.claw = new Claw(this,this.numChains+1, this.numChains+1, this.segLength)
 					
-					this.chains = [];
 					for(var ii = 0; ii < this.numChains+1; ii += 1){
 						var newChain = new Chain(this,ii, this.numChains+1, this.segLength);
-						this.chains.push(newChain);
+						this.addChild(newChain);
 					}
-					this.chains.reverse();
-					this.chains.push(this.claw);
-					for(var ii = 0; ii < this.chains.length; ii += 1){
-						this.chains[ii].brother = this.chains[ii-1]
+					//this.children.reverse();
+					this.addChild(this.claw);
+					for(var ii = 0; ii < this.children.length; ii += 1){
+						this.children[ii].brother = this.children[ii-1]
 					}
 					
 				},
 				every: function(){
 					this.totalVar = (this.totalBase + this.speedFactor2*Math.sin(this.speedFactor));
-					totalSpeed = this.chains[0].speed;
-					for(var ii = 0; ii < this.chains.length; ii+=1){
-						this.chains[ii].every();
-						this.chains[ii].render(ctx);
-					}
-					//this.chains[0].rotation += totalSpeed * this.totalVar;
-					
+					totalSpeed = this.children[0].speed;
+					//this.rotation+=0.01
 					this.speedFactor+=this.speediness;
 				},
 				draw: function(){
-					
 				}
 				
 			});
-			var claw;
 			
-			var numSys= 20;
-			var allSys = [];
-			for(var nn = 0; nn < numSys; nn+=1){
-				var sys1 = new System(100 + Math.random()*(-200+canvas.height), 100 + Math.random()*(-200+canvas.height));
-				allSys.push(sys1);
+			while(kanvas.stage.children.length < 80){
+				kanvas.stage.addChild(new System(document.width*Math.random(), document.height*Math.random()));
 			}
 			
-			setInterval(function(){
-				ctx.fillStyle = "#000";
-				ctx.fillRect(0,0,canvas.width,canvas.height);
-					
-				
-				
-				for(var nn = 0; nn < numSys; nn+=1){
-					allSys[nn].every();
-					allSys[nn].render(ctx);
-				}
-
-			},1000/60);
 			
 			
 		</script>

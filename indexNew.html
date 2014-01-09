@@ -1,0 +1,169 @@
+ <html>
+	<head>
+		<title>Kanvas</title>
+		
+		<script type="application/javascript", src="lib/jquery.js"></script>
+		
+	</head>  
+	<body style="overflow: hidden">  
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			
+			var kanvas = Kanvas.create(document.body, {baseFPS:50});
+			var canvas = kanvas.canvas;
+			var stage = kanvas.stage;
+			
+			var COLOR1 = '#EDC9AF';
+			var COLOR2 = '#dd9999';
+			var COLOR3 = '#cc8080';
+			var COLOR4 = '#aa6565';
+			var COLOR5 = '#995533';
+			var COLOR6 = '#995533';
+			var COLOR7 = '#662211';
+			var COLOR8 = '#662211';
+			
+			stage.color = COLOR1;
+			
+			
+			
+			var DartSection = Kanvas.class({
+				init : function(){
+					//this.addEventListener('mousemove');
+					//this.addEventListener('mousedown');
+					this.showBox = false;
+					this.dynamic = false;
+					this.targetScale = 1;
+					this.dying = false;
+				},
+				mouseDown:function(){
+					this.dying = true;
+				},
+				every: function(){
+					if(this.dying){
+						if(this.scaleX>0.07){
+							this.scaleX = this.scaleY = Kanvas.moveTo(this.scaleX, 0, 4);
+						}else{
+							this.parent.removeChild(this);
+						}
+					}
+				},
+				draw : function(cc){
+					cc.fillStyle = COLOR7;
+					cc.beginPath();
+					cc.moveTo(0,0)
+					cc.arc(0,0,71,0,Math.PI/2);
+					cc.closePath();
+					cc.fill();
+					
+					cc.fillStyle = COLOR2;
+					cc.beginPath();
+					cc.moveTo(0,0)
+					cc.arc(0,0,70,0,Math.PI/2);
+					cc.closePath();
+					cc.fill();
+					cc.fillStyle = COLOR3;
+					
+					cc.beginPath();
+					cc.moveTo(0,0)
+					cc.arc(0,0,53,0,Math.PI/2);
+					cc.closePath();
+					cc.fill();
+					
+					cc.fillStyle = COLOR4;
+					cc.beginPath();
+					cc.moveTo(0,0)
+					cc.arc(0,0,33,0,Math.PI/2);
+					cc.closePath();
+					cc.fill();
+				}
+			})
+			
+			
+			var DartBoard = Kanvas.class({
+				init:function(xx,yy,ss){
+					//this.addEventListener('mousemove');
+					//this.addEventListener('mousedown');
+					this.dynamic = false;
+					this.showBox = false;
+					this.dying = false;
+					this.rS = 0;
+					this.x = xx;
+					this.y = yy;
+					this.mS = ss||1;
+					this.ii = 0;
+					this.PI2 = Math.PI*2;
+					this.PIInd = Math.PI/2;
+					this.scaleX = this.scaleY = this.mS;
+					this.__setHitBox(15);
+					for(var ii = 0; ii < 4; ii += 1){
+						/*var newSection = new DartSection();
+						newSection.rotation = ii/4 * Math.PI*2;
+						this.addChild(newSection);*/
+					}
+				},
+				every:function(){
+					if(this.dead)return false;
+					this.rotation += 0.03
+					if(this.dying){
+						this.rotation += this.rS;
+						this.rS += 0.03;
+						this.scaleX = this.scaleY = Kanvas.moveTo(this.scaleX, 0, 12)
+						if(this.scaleX < 0.03){
+							this.dead = true;
+						}
+					}
+				},
+				mouseDown:function(){
+					this.kill();
+				},
+				draw:function(cc){
+					if(this.dead)return false;
+					
+					if(this.children.length<=0){
+						//this.kill();
+					}
+					/*
+					for(var ii = 0; ii < this.PI2; ii += this.PIInd){
+						cc.fillStyle = COLOR7;
+						cc.fillArc(Math.cos(ii)*73,Math.sin(ii)*73,7);
+						cc.fillStyle = COLOR5;
+						cc.fillArc(Math.cos(ii)*73,Math.sin(ii)*73,5);
+					}
+					
+					cc.fillStyle = COLOR7;
+					cc.fillArc(0,0,15);
+					cc.fillRect(-70,-4,140,8);
+					cc.fillRect(-4,-70,8,140);*/
+					cc.fillStyle = COLOR5;
+					cc.fillRect(-72,-2,144,4);
+					cc.fillRect(-2,-72,4,144);
+					cc.fillArc(0,0,13);
+					
+					cc.fillStyle = COLOR1;
+					cc.fillArc(0,0,9);
+				},
+				kill:function(){
+					this.dying = true;
+				}
+			})
+			
+			
+			while(kanvas.stage.children.length<40){
+				var hand = new DartBoard(canvas.width*Math.random(),canvas.height*Math.random(), Math.random()*0.4 + 0.2);
+				kanvas.stage.addChild(hand);
+			}
+			
+			kanvas.stage.every = function(){
+				this.children.map(function(a){
+					if(!a.speed)a.speed = Math.random()*3 + 2;
+					a.x += a.speed
+					if(a.x > canvas.width + 100)a.x = -100
+				})				
+			}
+			
+			
+		</script>
+		
+	</body>  
+</html>  

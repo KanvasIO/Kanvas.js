@@ -1,0 +1,125 @@
+ <html>
+	<head>
+		<title>Kanvas</title>
+		
+		<script type="application/javascript", src="lib/jquery.js"></script>
+		
+	</head>  
+	<body style="overflow: hidden">  
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			
+			function createWhiteBoardIn(ctr, ww, hh){
+				var kanvas = Kanvas.create(ctr, {baseFPS:50});
+				var canvas = kanvas.canvas;
+				var stage = kanvas.stage;
+				
+				if(ww)canvas.width = ww;
+				if(hh)canvas.height = hh;
+				
+				var Eraser = Kanvas.class({
+					init: function(){
+						this.dynamic = false;
+					},
+					every:function(){
+						if(this.parent && this.parent.image){
+							this.parent.image.getContext('2d').fillStyle = "#fff";
+							this.parent.image.getContext('2d').fillArc(this.x, this.y, 40);
+						}
+					},
+					draw: function(context){
+						context.fillStyle = "#333"
+						context.beginPath();
+						context.arc(0,-15,10, 0, Math.PI, true)
+						context.arc(0,15,10, Math.PI, 0, true)
+						context.closePath();
+						context.fill();
+					}
+				});
+				
+				var WhiteBoard = Kanvas.class({
+					init: function(ww,hh){
+						this.ww = ww;
+						this.hh = hh;
+						this.dynamic = false;
+						this.padding = 10;
+						this.newContext = null;
+						this.image = null;
+						this.swipes = 10;
+						this.s;
+						this.sMax = 90;
+						this.clearing = false;
+						
+						this.eraser = new Eraser();
+					},
+					giveContents: function(img){
+						this.image = document.createElement('canvas');
+						this.newContext = this.image.getContext('2d');
+						this.image.width = img.width;
+						this.image.height = img.height;
+						this.newContext.drawImage(img,this.padding,this.padding);
+					},
+					clearContents: function(){
+						console.log('started clearing');
+						this.s = 0;
+						this.clearing = true;
+					},
+					every:function(){
+						if(this.clearing){
+							if(this.s < 10 && this.children.length < 1)this.addChild(this.eraser);
+							if(this.s < this.sMax){
+								this.a = 0.5 + Math.sin(this.s/4)*0.5;
+								this.eraser.x = this.padding + this.a * this.ww*0.95
+								this.eraser.y = this.padding + this.s/this.sMax * this.hh*0.95
+								
+								this.s += 1;
+							}else if(this.s < this.sMax + 10){
+								if(this.newContext){
+									this.newContext.fillStyle = "#fff"
+									this.newContext.globalAlpha = 0.3;
+									this.newContext.fillRect(0,0,this.image.width,this.image.height);
+								}
+								this.s += 1;
+							}else{
+								console.log('done clearing');
+								this.clearing = false;
+								this.s = null;
+								this.image = this.newContext = null;
+								this.removeChild(this.eraser);
+							}
+						}
+					},
+					predraw: function(context){
+						context.fillStyle = "#FFF";
+						context.fillRect(0,0,this.ww, this.hh);
+						
+						if(this.image)context.drawImage(this.image,0,0);
+						
+						context.fillStyle = "#F00";
+						context.fillRect(0,0,this.ww,10);
+						context.fillRect(0,0,10,this.hh);
+						context.fillRect(0,this.hh-this.padding,this.ww,10);
+						context.fillRect(this.ww-this.padding,0,10,this.hh);
+					}
+				})
+				var whiteBoard = new WhiteBoard(ww,hh)
+				stage.addChild(whiteBoard);
+				return whiteBoard;
+			}
+			var wb = createWhiteBoardIn(document.body, 400, 300);
+			
+			var fart = document.createElement('canvas');
+			var budi = fart.getContext('2d');
+			fart.width = 400;
+			fart.height = 300;
+			budi.fillStyle = "#333";
+			budi.fillRect(0,0,fart.width,fart.height);
+			wb.giveContents(fart);
+			
+			
+			
+		</script>
+		
+	</body>  
+</html>  

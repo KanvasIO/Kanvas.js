@@ -1,0 +1,103 @@
+
+ <html>
+	<body>
+		<script src="http://code.jquery.com/jquery-latest.js"></script>
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			var kanvas = Kanvas.create(document.body, {baseFPS:60});
+			var canvas = kanvas.canvas;
+			var stage = kanvas.stage;
+			
+			stage.color = "#fff";
+			
+			var ColorPicker = Kanvas.class({
+				init:function(){
+					this.image = new Image();
+					this.image.src = "colorpick.png";
+					this.addEventListener('mousemove');
+					this.addEventListener('mousedown');
+					this.r = null
+					this.g = null
+					this.b = null
+				},
+				mouseMove:function(){
+					var hoveredColor = this.kanvas.context.getImageData(this.mouseX, this.mouseY,1,1);
+					this.rr = hoveredColor.data[0];
+					this.gg = hoveredColor.data[1];
+					this.bb = hoveredColor.data[2];
+					if(	(this.rr == 0 && this.gg == 0 && this.bb == 0) || 
+						(this.rr == 255 && this.gg == 255 && this.bb == 255))return false;
+					if(this.rr != this.r || this.gg != this.g || this.bb != this.b){
+						this.r = this.rr;
+						this.g = this.gg;
+						this.b = this.bb;
+						this.cx = this.getCenterX(this.kanvas.context, this.mouseX, this.mouseY, this.r, this.g, this.b, canvas.width);
+						this.cy = this.getCenterY(this.kanvas.context, this.mouseX, this.mouseY, this.r, this.g, this.b, canvas.height);
+					}
+				},
+				
+				getCenterX:function (cc,xx,yy,rr,gg,bb, ww){
+					var left = 0;
+					var right = 0;
+					var px = xx;
+					while(	xx>0&&
+							cc.getImageData(xx,yy,1,1).data[0] == rr &&
+							cc.getImageData(xx,yy,1,1).data[1] == gg &&
+							cc.getImageData(xx,yy,1,1).data[2] == bb){
+						left-=1;
+						xx-=1;
+					}
+					xx = px
+					while(	xx < ww &&
+							cc.getImageData(xx,yy,1,1).data[0] == rr &&
+							cc.getImageData(xx,yy,1,1).data[1] == gg &&
+							cc.getImageData(xx,yy,1,1).data[2] == bb){
+						right+=1;
+						xx+=1;
+					}
+					console.log(right - left);
+				},
+				
+				getCenterY:function (cc,xx,yy,rr,gg,bb, hh){
+					var up = 0;
+					var down = 0;
+					var py = yy;
+					while(	xx>0&&
+							cc.getImageData(xx,yy,1,1).data[0] == rr &&
+							cc.getImageData(xx,yy,1,1).data[1] == gg &&
+							cc.getImageData(xx,yy,1,1).data[2] == bb){
+						up-=1;
+						yy-=1;
+					}
+					yy = py
+					while(	yy < hh &&
+							cc.getImageData(xx,yy,1,1).data[0] == rr &&
+							cc.getImageData(xx,yy,1,1).data[1] == gg &&
+							cc.getImageData(xx,yy,1,1).data[2] == bb){
+						down+=1;
+						yy+=1;
+					}
+					console.log(down- up);
+				},
+				
+				draw: function(cc){
+					cc.fillStyle = "#CCC";
+					cc.fillRect(0,0,this.image.width+10,this.image.height+10);
+					cc.fillStyle = "#FCC";
+					cc.fillRect(30,30,40,70);
+					
+					if(this.cx){
+						cc.fillStyle = "#f00";
+						cc.strokeArc(this.cx, this.cy, 10);
+					}
+					cc.drawImage(this.image, 5,5);
+				}
+			})
+			
+			stage.addChild(new ColorPicker());
+			
+		</script>
+		
+	</body>  
+</html>  
