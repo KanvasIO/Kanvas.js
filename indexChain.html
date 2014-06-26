@@ -80,7 +80,7 @@
 					
 				},
 				draw: function(){
-					context.fillStyle = this.color;
+					context.fillStyle = ((this.rolled)?('#FF0000'):(this.color));;
 					if(this.wave<3){
 						this.wave += 0.01
 						this.snap = 0.1 + 0.3 * (1-Math.pow(Math.sin(this.wave),20));
