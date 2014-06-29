@@ -1,0 +1,238 @@
+<html>
+	<head>
+		<title>My first Three.js app</title>
+		<style>canvas { width: 100%; height: 100% }</style>
+	</head>
+	<body>
+		<script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+		<script>
+		
+		var keys = []
+		
+		document.addEventListener('keydown', function(ev){keys[ev.keyCode] = true})
+		document.addEventListener('keyup', function(ev){keys[ev.keyCode] = false})
+		
+		
+		
+		var scene = new THREE.Scene();
+		var light1 = new THREE.AmbientLight('#444444');
+		var light2 = new THREE.HemisphereLight('#ffffff','#444444', 1);
+		light2.position.set( 1, 1, 0 );
+		scene.add(light1);
+		scene.add(light2);
+		
+		
+		var client = new XMLHttpRequest();
+		var startedParse = false;
+		var finishedParse = false;
+		client.open('GET', 'csz_	test.vmf');
+		client.onreadystatechange = function() {
+			parseMapJSON(client.responseText)
+		}
+		client.send();
+		var calledLength = -1;
+		function parseMapJSON(data){
+			
+			if(!data || !data.charAt(0))return false;
+			if(calledLength!=data.length){
+				calledLength = data.length;
+				return false;
+			}
+			if(startedParse)return false;
+			startedParse = true;
+			var finalData = {}
+			
+			var prevActive = []
+			var length = data.length;
+			var active = finalData;
+			var waitingName;
+			var propName = null;
+			console.log(length);
+			function parseData(string){
+				
+				if(string == "{"){
+					if(!waitingName)console.error('reached { but no waiting name')
+				
+					var newObject = {};
+					newObject.name = waitingName; 
+					
+					prevActive.push(active);
+					
+					if(!active[waitingName])active[waitingName] = newObject;
+					else {
+						if(!active[waitingName].length)active[waitingName] = [active[waitingName]];
+						active[waitingName].push(newObject);
+					}
+					
+					waitingName = null;
+					active = newObject;
+					return;
+				}else if(waitingName)console.error('expected { but found none');
+				
+				if(string == "}"){
+					if(!prevActive.length)console.error('reached } with no fall back');
+					active = prevActive.pop();
+					
+					return;
+				}
+				
+				if(string.charAt(0) != '"'){
+					waitingName = string;
+					return;
+				}
+				
+				string = string.substring(1, string.length-1); //- cut quotations
+				
+				if(!propName)propName = string;
+				else{
+					active[propName] = string;
+					propName = null;
+				}
+			}
+			
+			var spaces = [0, 9, 10, 13, 32]
+			var code,letter;
+			var word = "";
+			var ignoringSpaces = false;
+			for(var ii = 0; ii < length; ii += 1){
+				
+				code = data.charCodeAt(ii);
+				letter = data[ii];
+				
+				if(!letter)continue;
+				
+				if(letter == '"')ignoringSpaces = !ignoringSpaces;
+				if(ignoringSpaces || spaces.indexOf(code) == -1)word = word + letter
+				else{
+					if(word.length)parseData(word);
+					word = "";
+				}
+				
+			}
+			
+			//console.log(active);
+			
+			// - parse solids
+			var solids = [];
+			var curSolid,curSide;
+			var newSolid;
+			var newVert, newVerts, newFace;
+			var vertWords, clear;
+			var letters = ['a','b','c'];
+			var even = false;
+			word = "";
+			if(!active.world.solid.length)active.world.solid = [active.world.solid];
+			for(var solid in active.world.solid){
+				//console.log('new solid?');
+			
+				curSolid = active.world.solid[solid];
+				newSolid = new THREE.Geometry();
+				newSolid.planes = [];
+				even = false;
+				for(var side in curSolid.side){
+					even = !even;
+					curSide = curSolid.side[side];
+					vertWords = [];
+					newVerts = [];
+					word = "";
+					newPlane = {};
+					newPlane.verts = []
+
+					for(var pp in curSide.plane){
+						if(curSide.plane.charCodeAt(pp) != 32)word = word + curSide.plane.charAt(pp)
+						else{
+							//console.log(word);
+							if(word.length)vertWords.push(word);
+							word = "";
+						}
+					}
+					if(word.length)vertWords.push(word);
+					
+					for(var vw = 0, on = 0; vw < vertWords.length; vw+=3, on+=1){
+						newVert = new THREE.Vector3(
+							Number(vertWords[vw].substring(1, vertWords[vw].length)),
+							Number(vertWords[vw+2].substring(0, vertWords[vw+2].length-1)),
+							Number(vertWords[vw+1])
+						);
+						newVert.refs = [newPlane];
+						//if(Math.random()<0.001)console.log(newVert);
+						altID = null;
+						for(var vv in newSolid.vertices){
+							if(	Math.abs(newSolid.vertices[vv].x-newVert.x)<2 && 
+								Math.abs(newSolid.vertices[vv].y-newVert.y)<2 && 
+								Math.abs(newSolid.vertices[vv].z-newVert.z)<2 ){
+								altID = Number(vv);
+								newSolid.vertices[vv].refs.push(newPlane);
+								//console.log('found');
+								continue;
+							}
+						}
+						
+						
+						if(altID){
+							newPlane.verts[on] = altID;
+						}else{
+							newSolid.vertices.push(newVert);
+							newPlane.verts[on] = newSolid.vertices.length-1;
+						}
+						
+						
+					}
+					
+					newSolid.planes.push(newPlane);
+							
+				}
+				
+				//for(var vv in newSolid.vertices){
+				//	for(var ii = 0; ii < newSolid.planes.length  && newSolid.vertices[vv].refs.length<3; ii+=1){
+				//		var hasRef = false;
+				//		for(var nn in newSolid.vertices[vv].refs)hasRef = hasRef || newSolid.vertices[vv].refs[nn].id ==  newSolid.planes[ii].id;
+				//		if(!hasRef){
+				//			var dist = 
+				//		}
+				//	}					
+				//}
+				solids.push(newSolid);
+				
+				newSolid.centroidsNeedUpdate = true;
+				newSolid.normalsNeedUpdate = true;
+			}
+			
+			
+			for(var ss in solids){
+				var mesh = new THREE.Mesh(solids[ss], new THREE.MeshLambertMaterial({color:Math.random()*200000}));
+				scene.add(mesh);
+			}
+			s = solids
+		}
+		
+		var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100000);
+
+		var renderer = new THREE.WebGLRenderer();
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(renderer.domElement);
+
+		
+		camera.rotation.x = -0.8;
+
+		var render = function () {
+			requestAnimationFrame(render);
+
+			if(keys[65])camera.position.x -= 15;
+			if(keys[68])camera.position.x += 15;
+
+			if(keys[83])camera.position.z += 15;
+			if(keys[87])camera.position.z -= 15;
+
+			if(keys[69])camera.position.y += 15;
+			if(keys[81])camera.position.y -= 15;
+			
+			renderer.render(scene, camera);
+		};
+
+		render();
+		
+		
+		</script>
+	</body>
+</html>
