@@ -1,0 +1,78 @@
+
+<html>
+<head>
+</head>
+<body>
+<script src="KContext.js"></script>
+<script>
+//-- Java-script:
+
+var canvas = Kanvas.makeCanvas(document.body);
+
+
+var WHEEL = Kanvas.Class('Wheel', {
+	init: function(xx,yy){
+		this.x = xx;
+		this.y = yy;
+	},
+	draw: function(cc){
+		cc.fillStyle = "black";
+		cc.fillArc(0,0,15);
+	}
+})
+
+var CAR = Kanvas.Class('CAR', {
+	init: function(){
+		this.x = -canvas.width/2 + canvas.width * Math.random();
+		this.y = -canvas.height/2 + canvas.height * Math.random();
+		this.width = 100;
+		this.height = 40;
+		this.speed = Math.random()*10 + 2;
+		this.r = Math.round(Math.random()*255)
+		this.g = Math.round(Math.random()*255)
+		this.b = Math.round(Math.random()*255)
+		
+		this.addChild(new WHEEL(this.width*0.2, this.height));
+		this.addChild(new WHEEL(this.width*0.8, this.height));
+		
+		this.addEventListener('mouse');
+	},
+	every: function(){
+		this.x += this.speed;
+		if(this.x > this.parent.width/2)this.x = -this.parent.width/2;
+	},
+	mouseEnter: function(){
+		this.parent.removeChild(this);
+		delete this;
+	},
+	predraw: function(cc){
+		cc.setFillRGBA(this.r, this.g, this.b, 1);
+		cc.fillRect(0,this.height/2,this.width,this.height/2);
+		cc.fillArc(this.width*0.4,this.height/2 + 2,20, 0, Math.PI);
+	}
+})
+	
+
+
+
+canvas.setStage(new Kanvas.StageClass());
+canvas.startEvents();
+
+while(canvas.stage.children.length < 100){
+	canvas.stage.addChild(new CAR());
+}
+
+
+setInterval(function(){
+	canvas.width = canvas.width;
+	canvas.stage.x = canvas.width/2;
+	canvas.stage.y = canvas.height/2;
+	canvas.stage.rotation+=0.002;
+	canvas.stage.run();
+	// car.x += 10
+}, 1000/60);
+
+//-- Java-script End!
+</script>
+</body>
+</html>
