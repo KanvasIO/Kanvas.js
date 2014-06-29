@@ -204,7 +204,7 @@
 			
 			
 			for(var ss in solids){
-				var mesh = new THREE.Mesh(solids[ss], new THREE.MeshLambertMaterial({Math.random()*200000}));
+				var mesh = new THREE.Mesh(solids[ss], new THREE.MeshLambertMaterial({color:Math.random()*200000}));
 				scene.add(mesh);
 			}
 			s = solids
