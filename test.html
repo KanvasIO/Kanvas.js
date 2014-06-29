@@ -172,8 +172,8 @@
 						if(altID){
 							newPlaneVerts.push(altID)
 						}else{
-							newPlaneVerts.push(newSolid.vertices.length-1)
 							newSolid.vertices.push(newVert);
+							newPlaneVerts.push(newSolid.vertices.length)
 							//newPlaneVerts.push(newVert);
 							//newFace.verts[on] = newSolid.vertices.length-1;
 						}
