@@ -1,0 +1,80 @@
+/* <<<<<<< HEAD
+ <html>
+	<head>
+		<title>Kanvas</title>
+		
+		<script type="application/javascript", src="lib/jquery.js"></script>
+		
+	</head>  
+	<body style="overflow: hidden">  
+		<script type="application/javascript", src="js/KContext.js"></script>
+		
+		<script>
+			
+			var canvas = document.createElement('canvas');
+			canvas.width = document.body.getBoundingClientRect().width;
+			canvas.height = document.body.getBoundingClientRect().height;
+			document.body.appendChild(canvas);
+			var context = canvas.getContext('2d');
+			
+			var COLOR1 = '#EDC9AF';
+			var COLOR2 = '#dd9999';
+			var COLOR3 = '#cc8080';
+			var COLOR4 = '#aa6565';
+			var COLOR5 = '#995533';
+			var COLOR6 = '#995533';
+			var COLOR7 = '#662211';
+			var COLOR8 = '#662211';
+			
+			var allThings = [];
+			for(var ii = 0; ii < 30; ii += 1){
+				allThings.push({	xx:Math.random()*canvas.width,
+									yy:Math.random()*canvas.height,
+									rr:Math.random()*Math.PI*2	})
+			}
+			var ii = 0;
+			var nn = 0;
+			var pi2 = Math.PI*2;
+			var pihalf = Math.PI/2;
+			function draw(){
+				//context.fillStyle = COLOR2;
+				//context.fillRect(0,0,canvas.width,canvas.height);
+				for(ii in allThings){
+					//allThings[ii].rr += 0.03;
+					//allThings[ii].xx += 2;
+					//allThings[ii].xx %= canvas.width;
+					
+					//context.save();
+					//context.translate(allThings[ii].xx,allThings[ii].yy);
+					//context.rotate(allThings[ii].rr);
+					//context.scale(allThings[ii].scale,allThings[ii].scale);
+					
+					for(nn = 0; nn < pi2; nn += pihalf){
+						//context.fillStyle = COLOR7;
+						//context.fillArc(Math.cos(nn)*73,Math.sin(nn)*73,7);
+						//context.fillStyle = COLOR5;
+						//context.fillArc(Math.cos(nn)*73,Math.sin(nn)*73,5);
+					}
+					
+					//context.fillStyle = COLOR7;
+					//context.fillArc(0,0,15);
+					//context.fillRect(-70,-4,140,8);
+					//context.fillRect(-4,-70,8,140);
+					//context.fillStyle = COLOR5;
+					//context.fillRect(-72,-2,144,4);
+					//context.fillRect(-2,-72,4,144);
+					//context.fillArc(0,0,13);
+					
+					//context.fillStyle = COLOR1;
+					//context.fillArc(0,0,9);
+					//context.restore();
+				}
+			}
+			
+			setInterval(draw, 1000/60);
+			
+		</script>
+		
+	</body>  
+</html>  
+=======*/
