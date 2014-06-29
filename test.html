@@ -16,6 +16,7 @@
 		
 		
 		var scene = new THREE.Scene();
+		scene.fog = new THREE.Fog('red',0.1,1000)
 		var light1 = new THREE.AmbientLight('#444444');
 		var light2 = new THREE.HemisphereLight('#ffffff','#444444', 1);
 		light2.position.set( 1, 1, 0 );
@@ -203,7 +204,7 @@
 			
 			
 			for(var ss in solids){
-				var mesh = new THREE.Mesh(solids[ss], new THREE.MeshLambertMaterial({color:Math.random()*200000}));
+				var mesh = new THREE.Mesh(solids[ss], new THREE.MeshLambertMaterial({color:(solids[ss].geometry.vertices[0].z/1000)*200000}));
 				scene.add(mesh);
 			}
 			s = solids
