@@ -136,8 +136,7 @@
 					vertWords = [];
 					newVerts = [];
 					word = "";
-					newPlane = {};
-					newPlane.verts = []
+					newPlaneVerts = [];
 
 					for(var pp in curSide.plane){
 						if(curSide.plane.charCodeAt(pp) != 32)word = word + curSide.plane.charAt(pp)
@@ -155,7 +154,7 @@
 							Number(vertWords[vw+2].substring(0, vertWords[vw+2].length-1)),
 							Number(vertWords[vw+1])
 						);
-						newVert.refs = [newPlane];
+						newVert.refs = [newFace];
 						//if(Math.random()<0.001)console.log(newVert);
 						altID = null;
 						for(var vv in newSolid.vertices){
@@ -163,7 +162,7 @@
 								Math.abs(newSolid.vertices[vv].y-newVert.y)<2 && 
 								Math.abs(newSolid.vertices[vv].z-newVert.z)<2 ){
 								altID = Number(vv);
-								newSolid.vertices[vv].refs.push(newPlane);
+								newSolid.vertices[vv].refs.push(newFace);
 								//console.log('found');
 								continue;
 							}
@@ -171,16 +170,18 @@
 						
 						
 						if(altID){
-							newPlane.verts[on] = altID;
+							newPlaneVerts.push(altID)
 						}else{
+							newPlaneVerts.push(newSolid.vertices.length-1)
 							newSolid.vertices.push(newVert);
-							newPlane.verts[on] = newSolid.vertices.length-1;
+							//newPlaneVerts.push(newVert);
+							//newFace.verts[on] = newSolid.vertices.length-1;
 						}
 						
 						
 					}
-					
-					newSolid.planes.push(newPlane);
+					newFace = new THREE.Face3(newPlaneVerts[0], newPlaneVerts[1],newPlaneVerts[2]);
+					newSolid.faces.push(newFace);
 							
 				}
 				
