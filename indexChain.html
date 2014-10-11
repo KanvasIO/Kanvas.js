@@ -76,14 +76,9 @@
 					this.addEventListener('mousemove');
 					
 				},
-<<<<<<< HEAD
 				draw: function(context){
 				
 					context.fillStyle = (this.rolled)?("#f72"):(this.color);
-=======
-				draw: function(){
-					context.fillStyle = ((this.rolled)?('#FF0000'):(this.color));;
->>>>>>> 01af195dc0f1700a87ab30a1daf6fcf67713bc87
 					if(this.wave<3){
 						this.wave += 0.01
 						this.snap = 0.1 + 0.3 * (1-Math.pow(Math.sin(this.wave),20));
@@ -163,17 +158,16 @@
 				
 			});
 			
-<<<<<<< HEAD
-			while(kanvas.stage.children.length < 80){
-				kanvas.stage.addChild(new System(document.width*Math.random(), document.height*Math.random()));
-=======
+			//while(kanvas.stage.children.length < 80){
+			//	kanvas.stage.addChild(new System(document.width*Math.random(), document.height*Math.random()));
+
 			var numSys= 50;
 			var allSys = [];
 			for(var nn = 0; nn < numSys; nn+=1){
 				var sys1 = new System(100 + Math.random()*(-200+canvas.height), 100 + Math.random()*(-200+canvas.height));
 				allSys.push(sys1);
->>>>>>> 01af195dc0f1700a87ab30a1daf6fcf67713bc87
 			}
+			
 			
 			
 			
